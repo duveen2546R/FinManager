@@ -159,25 +159,3 @@ The backend exposes the following RESTful API endpoints:
 | `/ai/agent/invoke`       | `POST` | Sends a natural language query to the AI agent. |
 
 ---
-
-## 🚧 Future Work / Roadmap
-
-This project has a solid foundation, but there are many exciting features that could be added:
-
-*   [ ] **Budgeting Module:** Allow users to set monthly budgets per category and track their spending against them.
-*   [ ] **Multiple Accounts:** Enable users to add and manage multiple financial accounts (e.g., Checking, Savings, Credit Card).
-*   [ ] **Savings Goals:** A feature to set and track progress towards specific savings goals.
-*   [ ] **Recurring Transactions:** Allow users to schedule recurring income and expenses (e.g., salary, rent).
-*   [ ] **Advanced AI Insights:** Enhance the AI agent to provide proactive insights, like "You've spent 80% of your food budget this month" or "Your travel spending is higher than usual."
-
----
-
-## 🤝 Contributing
-
-Contributions, issues, and feature requests are welcome! Feel free to check the [issues page](https://github.com/your-username/finmanager/issues).
-
----
-
-## 📜 License
-
-This project is licensed under the MIT License - see the `LICENSE` file for details.
