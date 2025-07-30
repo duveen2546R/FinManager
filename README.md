@@ -1,6 +1,6 @@
 # FinManager: AI-Powered Personal Finance Tracker
 
-**A full-stack, cross-platform personal finance management application built with Flutter and a powerful Python backend. Featuring a conversational AI agent powered by LangChain and Groq to provide intelligent insights into your spending habits.**
+**A full-stack, cross-platform personal finance management application built with Flutter and a powerful Python backend. Featuring a conversational AI agent powered by LangChain and Gemini to provide intelligent insights into your spending habits.**
 
 ---
 
