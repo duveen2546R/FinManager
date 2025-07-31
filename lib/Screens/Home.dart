@@ -94,7 +94,7 @@ class _HomeScreenState extends State<HomeScreen> {
     if (_userId == null) return;
     setState(() { _isLoading = true; _errorMessage = null; });
 
-    final String apiUrl = 'http://10.56.42.175:5000/transactions/$_userId';
+    final String apiUrl = 'http://127.0.0.1:5000/transactions/$_userId';
 
     try {
       final response = await http.get(Uri.parse(apiUrl));
@@ -156,7 +156,6 @@ class _HomeScreenState extends State<HomeScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         actions: [
-          IconButton(icon: const Icon(Icons.refresh), tooltip: "Refresh Data", onPressed: _isLoading ? null : _fetchDashboardData),
           IconButton(
             icon: const Icon(Icons.account_circle_outlined),
             tooltip: "My Account",
@@ -226,7 +225,7 @@ class _HomeScreenState extends State<HomeScreen> {
               heroTag: 'ai_agent_fab',
               label: const Text("AI Agent"),
               icon: const Icon(Icons.auto_awesome),
-              backgroundColor: Colors.deepPurple,
+              backgroundColor: Colors.lightBlue,
             ),
             const SizedBox(width: 16),
             FloatingActionButton(

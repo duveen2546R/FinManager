@@ -99,7 +99,7 @@ class _AiAgentScreenState extends State<AiAgentScreen> {
     _controller.clear();
     _scrollToBottom();
 
-    const String apiUrl = 'http://10.56.42.175:5000/ai/agent/invoke'; 
+    const String apiUrl = 'http://127.0.0.1:5000/ai/agent/invoke'; 
 
     try {
       final response = await http.post(
@@ -143,7 +143,8 @@ class _AiAgentScreenState extends State<AiAgentScreen> {
     
     return Scaffold(
       appBar: AppBar(
-        title: const Text("AI Financial Agent"),
+        title: const Text("FinManager AI"),
+        foregroundColor: Colors.white,
         backgroundColor: isDarkMode ? Colors.grey[900] : Colors.blueGrey[800],
       ),
       backgroundColor: isDarkMode ? const Color(0xFF121212) : Colors.grey.shade100,

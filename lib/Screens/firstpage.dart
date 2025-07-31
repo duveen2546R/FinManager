@@ -54,7 +54,7 @@ class FirstPageDesign extends StatelessWidget {
                   width: MediaQuery.of(context).size.width * 0.6,
                   child: ElevatedButton(
                     onPressed: () {
-                      Navigator.push(
+                      Navigator.pushReplacement(
                         context,
                         MaterialPageRoute(builder: (context) => const LoginPageDesign()),
                       );
@@ -85,9 +85,7 @@ class FirstPageDesign extends StatelessWidget {
                   width: MediaQuery.of(context).size.width * 0.6,
                   child: ElevatedButton(
                     onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => const RegisterPageDesign()),
+                      Navigator.pushNamed(context,'/register'
                       );
                     },
                     style: ElevatedButton.styleFrom(

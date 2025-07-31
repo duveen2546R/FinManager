@@ -58,7 +58,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
 
     // !! IMPORTANT !!
     // Replace with your computer's local IP address where the Flask server is running.
-    const String apiUrl = 'http://10.56.42.175:5000/transaction'; // <--- CHANGE THIS
+    const String apiUrl = 'http://127.0.0.1:5000/transaction'; // <--- CHANGE THIS
 
     try {
       final response = await http.post(

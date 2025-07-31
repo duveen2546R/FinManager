@@ -23,7 +23,6 @@ class _RegisterPageDesignState extends State<RegisterPageDesign> {
   bool _isLoading = false;
   bool _isPasswordVisible = false;
 
-  // --- NEW: Function to handle the register API call ---
   Future<void> _register() async {
     // Validate the form. If it's not valid, do nothing.
     if (!_formKey.currentState!.validate()) {
@@ -35,7 +34,9 @@ class _RegisterPageDesignState extends State<RegisterPageDesign> {
       _isLoading = true;
     });
 
-    const String apiUrl = 'http://10.56.42.175:5000/register'; // <--- CHANGE THIS
+    // !! IMPORTANT !!
+    // Replace with your computer's local IP address.
+    const String apiUrl = 'http://172.20.10.5:5000/register'; // <--- USE YOUR IP
 
     try {
       final response = await http.post(
@@ -61,7 +62,7 @@ class _RegisterPageDesignState extends State<RegisterPageDesign> {
             backgroundColor: Colors.green,
           ),
         );
-        // Go back to the login screen after successful registration
+        // Go back to the previous screen (login/first page) after successful registration
         Navigator.of(context).pop();
       } else {
         // Show an error message from the backend (e.g., "User already exists")
@@ -106,20 +107,21 @@ class _RegisterPageDesignState extends State<RegisterPageDesign> {
       backgroundColor: isDarkMode ? Colors.black : Colors.white,
       appBar: AppBar(
         title: const Text("Register"),
-        backgroundColor: isDarkMode ? Colors.grey[800] : Colors.deepOrange,
+        backgroundColor: isDarkMode ? Colors.grey[800] : Colors.blueGrey,
         foregroundColor: Colors.white,
       ),
       body: SingleChildScrollView(
         child: Column(
           children: [
-            // Header Image (no change)
+            // --- MODIFIED: Increased height to 65% of the screen ---
             SizedBox(
-              height: MediaQuery.of(context).size.height * 0.3,
+              height: MediaQuery.of(context).size.height * 0.55,
               width: double.infinity,
               child: const DecoratedBox(
                 decoration: BoxDecoration(
                   image: DecorationImage(
-                    image: AssetImage("assets/logo.png"),
+                    // Assuming you have an image named 'register_image.png' in your assets
+                    image: AssetImage("assets/register_image.png"), 
                     fit: BoxFit.cover,
                   ),
                 ),
@@ -129,7 +131,7 @@ class _RegisterPageDesignState extends State<RegisterPageDesign> {
             // Form Fields
             Padding(
               padding: const EdgeInsets.all(20.0),
-              child: Form( // Wrap the form fields in a Form widget
+              child: Form(
                 key: _formKey,
                 child: Column(
                   children: [
@@ -148,7 +150,7 @@ class _RegisterPageDesignState extends State<RegisterPageDesign> {
                       controller: _phoneController,
                       keyboardType: TextInputType.phone,
                       decoration: const InputDecoration(labelText: "Phone Number"),
-                      // Phone number validation is optional
+                      // Phone number validation is optional as per the schema
                     ),
                     const SizedBox(height: 20),
                     TextFormField(
@@ -165,10 +167,9 @@ class _RegisterPageDesignState extends State<RegisterPageDesign> {
                     const SizedBox(height: 20),
                     TextFormField(
                       controller: _passwordController,
-                      obscureText: !_isPasswordVisible, // Use state variable
+                      obscureText: !_isPasswordVisible,
                       decoration: InputDecoration(
                         labelText: "Password",
-                        // --- NEW: Password visibility toggle ---
                         suffixIcon: IconButton(
                           icon: Icon(
                             _isPasswordVisible
@@ -190,14 +191,12 @@ class _RegisterPageDesignState extends State<RegisterPageDesign> {
                       },
                     ),
                     const SizedBox(height: 30),
-
-                    // --- MODIFIED: Register Button ---
                     SizedBox(
                       width: MediaQuery.of(context).size.width * 0.7,
                       child: ElevatedButton(
                         onPressed: _isLoading ? null : _register,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: isDarkMode ? Colors.grey[850] : Colors.deepOrange,
+                          backgroundColor: isDarkMode ? Colors.grey[850] : Colors.blueGrey,
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 20),
                           textStyle: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
@@ -209,6 +208,7 @@ class _RegisterPageDesignState extends State<RegisterPageDesign> {
                             : const Text("Register"),
                       ),
                     ),
+                    const SizedBox(height: 20), // Extra padding at the bottom for better scrolling
                   ],
                 ),
               ),
