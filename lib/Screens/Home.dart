@@ -1,6 +1,7 @@
 import 'package:finmanager/Screens/account.dart';
 import 'package:finmanager/Screens/aiagent.dart';
 import 'package:finmanager/Screens/all_transactions.dart';
+import 'package:finmanager/Screens/config.dart';
 import 'package:finmanager/Screens/transaction.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http; // Import for API calls
@@ -94,7 +95,7 @@ class _HomeScreenState extends State<HomeScreen> {
     if (_userId == null) return;
     setState(() { _isLoading = true; _errorMessage = null; });
 
-    final String apiUrl = 'http://127.0.0.1:5000/transactions/$_userId';
+    final String apiUrl = '${AppConfig.getTransactionsEndpoint}/$_userId';
 
     try {
       final response = await http.get(Uri.parse(apiUrl));
@@ -425,10 +426,12 @@ class BarChartSample extends StatelessWidget {
   final List<Transaction> transactions;
   const BarChartSample({super.key, required this.isDarkMode, required this.transactions});
 
+  // Helper function to process transactions and group expenses by month
   Map<DateTime, double> _calculateMonthlySpending() {
     final Map<DateTime, double> data = {};
     for (var txn in transactions) {
       if (txn.type == 'Expense') {
+        // Use the first day of the month as the key for grouping
         final monthKey = DateTime(txn.date.year, txn.date.month);
         data.update(monthKey, (value) => value + txn.amount, ifAbsent: () => txn.amount);
       }
@@ -439,34 +442,70 @@ class BarChartSample extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final monthlySpending = _calculateMonthlySpending();
-    if (monthlySpending.isEmpty) return const Center(child: Text("Not enough data for monthly chart."));
-    final maxY = monthlySpending.values.reduce(max);
+    if (monthlySpending.isEmpty) {
+      return const Center(child: Text("Not enough data for monthly chart."));
+    }
     
-    final barGroups = monthlySpending.entries.map((entry) {
-      return BarChartGroupData(x: entry.key.month, barRods: [
-        BarChartRodData(toY: entry.value, color: isDarkMode ? Colors.teal.shade400 : Colors.teal, width: 20, borderRadius: BorderRadius.circular(4)),
-      ]);
+    // --- CRITICAL FIX 1: Sort the monthly data chronologically ---
+    final sortedEntries = monthlySpending.entries.toList()
+      ..sort((a, b) => a.key.compareTo(b.key));
+    
+    final maxY = sortedEntries.map((e) => e.value).reduce(max);
+    
+    // Create bar groups using the sorted list and its index
+    final barGroups = sortedEntries.asMap().entries.map((indexedEntry) {
+      final index = indexedEntry.key;  // This is our unique X-axis value (0, 1, 2...)
+      final entry = indexedEntry.value; // This is the {DateTime: amount} pair
+
+      return BarChartGroupData(
+        x: index, // --- CRITICAL FIX 2: Use the index for the x-axis ---
+        barRods: [
+          BarChartRodData(
+            toY: entry.value,
+            color: isDarkMode ? Colors.teal.shade400 : Colors.teal,
+            width: 20,
+            borderRadius: BorderRadius.circular(4),
+          ),
+        ],
+      );
     }).toList();
 
-    return BarChart(BarChartData(
-      barTouchData: BarTouchData(touchTooltipData: BarTouchTooltipData(tooltipBgColor: isDarkMode ? Colors.grey[800] : Colors.blueGrey)),
-      titlesData: FlTitlesData(
-        show: true,
-        rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-        topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-        bottomTitles: AxisTitles(sideTitles: SideTitles(
-          showTitles: true,
-          getTitlesWidget: (double value, TitleMeta meta) {
-            final monthStr = DateFormat.MMM().format(DateTime(0, value.toInt()));
-            return SideTitleWidget(axisSide: meta.axisSide, space: 8, child: Text(monthStr, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)));
-          },
-          reservedSize: 38,
-        )),
-        leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: true, reservedSize: 40, interval: maxY > 0 ? (maxY / 5).ceilToDouble() : 1)),
+    return BarChart(
+      BarChartData(
+        maxY: maxY * 1.2, // Add a little padding to the top of the chart
+        barTouchData: BarTouchData(touchTooltipData: BarTouchTooltipData(tooltipBgColor: isDarkMode ? Colors.grey[800] : Colors.white)),
+        titlesData: FlTitlesData(
+          show: true,
+          rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          bottomTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              getTitlesWidget: (double value, TitleMeta meta) {
+                // --- CRITICAL FIX 3: Use the index to get the correct month label ---
+                final index = value.toInt();
+                if (index < 0 || index >= sortedEntries.length) {
+                  return const Text(''); // Handle out-of-bounds index
+                }
+                final monthKey = sortedEntries[index].key;
+                final monthStr = DateFormat.MMM().format(monthKey); // e.g., "Jul"
+                return SideTitleWidget(axisSide: meta.axisSide, space: 8, child: Text(monthStr, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)));
+              },
+              reservedSize: 38,
+            ),
+          ),
+          leftTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              reservedSize: 40,
+              interval: maxY > 0 ? (maxY / 4).ceilToDouble() : 1, // Show ~5 labels
+            ),
+          ),
+        ),
+        borderData: FlBorderData(show: false),
+        barGroups: barGroups,
+        gridData: const FlGridData(show: true, drawVerticalLine: false),
       ),
-      borderData: FlBorderData(show: false),
-      barGroups: barGroups,
-      gridData: const FlGridData(show: true, drawVerticalLine: false),
-    ));
+    );
   }
 }

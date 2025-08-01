@@ -1,3 +1,4 @@
+import 'package:finmanager/Screens/config.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http; // Import the http package
 import 'dart:convert'; // Import for json encoding/decoding
@@ -36,7 +37,7 @@ class _RegisterPageDesignState extends State<RegisterPageDesign> {
 
     // !! IMPORTANT !!
     // Replace with your computer's local IP address.
-    const String apiUrl = 'http://172.20.10.5:5000/register'; // <--- USE YOUR IP
+    const String apiUrl = AppConfig.registerEndpoint; // <--- USE YOUR IP
 
     try {
       final response = await http.post(

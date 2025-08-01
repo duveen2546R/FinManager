@@ -41,6 +41,7 @@ dependencies:
   speech_to_text: ^6.6.0 # Or the latest version
   flutter_tts: ^3.8.5
   provider: ^6.1.2 # Or the latest version
+  flutter_launcher_icons: "^0.13.1"
 
 
 dev_dependencies:
@@ -97,3 +98,12 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+
+# Add this configuration at the end of your pubspec.yaml file
+flutter_launcher_icons:
+  android: true # The name of the icon file for Android
+  ios: true
+  image_path: "assets/icon.png" # The path to your source image
+  
+  # Optional settings for modern Android adaptive icons
+  adaptive_icon_background: "#FFFFFF" # A solid color for the background layer

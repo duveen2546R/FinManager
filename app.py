@@ -1,3 +1,7 @@
+# ==============================================================================
+# 1. IMPORTS
+# ==============================================================================
+# --- Core Flask and Database Imports ---
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from flask_bcrypt import Bcrypt
@@ -7,9 +11,9 @@ import json
 import datetime
 from decimal import Decimal
 import os
-import re 
+import re # For cleaning up AI-generated SQL
 
-# --- LangChain and AI Imports (with all corrections) ---
+# --- LangChain and AI Imports ---
 from langchain_community.utilities import SQLDatabase
 from langchain.chains import create_sql_query_chain
 from langchain_google_genai import ChatGoogleGenerativeAI
@@ -19,32 +23,47 @@ from langchain_community.tools import QuerySQLDataBaseTool
 from langchain_core.prompts import ChatPromptTemplate
 from dotenv import load_dotenv
 
-load_dotenv()
+# ==============================================================================
+# 2. INITIAL SETUP & CONFIGURATION
+# ==============================================================================
+load_dotenv() # Load environment variables from .env file
 
 app = Flask(__name__)
 CORS(app)
 bcrypt = Bcrypt(app)
 
+# --- Database Connection Function ---
 def get_db_connection():
     return psycopg2.connect(
-        host="localhost",
-        database="postgres",
+        host="finmanager.cypg4giyk1os.us-east-1.rds.amazonaws.com",
+        database="finmanager",
         user="postgres",
-        password="duveen2546"
+        password="duveen2546R",  
+        port=5432
     )
 
+# ==============================================================================
+# 3. LANGCHAIN AI AGENT SETUP (Using Google Gemini)
+# ==============================================================================
+
+# This code relies on the GOOGLE_API_KEY being set from the .env file
 llm = ChatGoogleGenerativeAI(
     model="gemini-1.5-flash-latest", 
     temperature=0, 
     convert_system_message_to_human=True
 )
 
-db_uri = "postgresql+psycopg2://postgres:duveen2546@localhost/postgres"
+db_uri = "postgresql+psycopg2://postgres:duveen2546R@finmanager.cypg4giyk1os.us-east-1.rds.amazonaws.com:5432/finmanager"
 db = SQLDatabase.from_uri(db_uri)
+
+# --- Define the official category lists ---
+EXPENSE_CATEGORIES = ['Food', 'Travel', 'Bills', 'Shopping', 'Rent', 'Others']
+INCOME_CATEGORIES = ['Salary', 'Bonus', 'Gift', 'Investment', 'Others']
 
 # --- Define Agent Tools ---
 
 # Tool 1: For querying transaction history
+# --- CRITICAL FIX: Add the {top_k} variable to the prompt template ---
 SQL_PROMPT_TEMPLATE = """You are a PostgreSQL expert. Your sole purpose is to generate a single, syntactically correct PostgreSQL query to answer the user's question.
 - **DO NOT** add any explanation or markdown formatting.
 - **ONLY** output the raw SQL query.
@@ -57,6 +76,7 @@ SQL Query:"""
 
 sql_prompt = ChatPromptTemplate.from_template(SQL_PROMPT_TEMPLATE)
 sql_query_chain = create_sql_query_chain(llm, db, prompt=sql_prompt)
+# --- END OF FIX ---
 execute_query = QuerySQLDataBaseTool(db=db)
 
 def run_sql_query_tool(question: str):
@@ -103,7 +123,7 @@ def add_transaction_func(action_input: str) -> str:
         cur = conn.cursor()
         cur.execute(
             "INSERT INTO transactions (transaction_id, user_id, title, description, amount, category, transaction_type, date) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)",
-            (str(uuid.uuid4()), user_id, params['title'], params.get('description'), params['amount'], params['category'], params['transaction_type'], datetime.datetime.now())
+            (str(uuid.uuid4()), user_id, params['title'], params.get('description'), params['amount'], params['category'], params['transaction_type'], datetime.datetime.fromisoformat(params.get('date')) if params.get('date') else datetime.datetime.now())
         )
         conn.commit()
         cur.close()
@@ -115,13 +135,25 @@ def add_transaction_func(action_input: str) -> str:
 add_transaction_tool = Tool(
     name="add_transaction_db",
     func=add_transaction_func,
-    description="""
-    Use this tool to add a new income or expense transaction to the database.
+    description=f"""
+    Use this tool to add a new income or expense transaction to the database based on the user's request.
     The input MUST be a single valid JSON string.
-    The JSON object must have these keys: 'title' (string), 'amount' (number), 'category' (string), and 'transaction_type' (string, either 'Income' or 'Expense').
-    It can optionally include a 'description' (string).
-    Example Input: {"title": "Coffee", "amount": 5.50, "category": "Food", "transaction_type": "Expense", "description": "Met with a friend"}
-    You must infer the category and transaction_type from the user's request. If a category is unclear, use 'Others'.
+
+    The JSON object must have the following keys:
+    - 'title': (string) A concise title for the transaction.
+    - 'amount': (number) The numerical amount of the transaction.
+    - 'category': (string) The category of the transaction.
+    - 'transaction_type': (string) Either 'Income' or 'Expense'.
+    - 'description': (string, optional) Any extra notes from the user.
+    - 'date': (string, optional) A specific ISO format date (e.g. "2024-07-30"). If not provided, current date will be used.
+
+    **RULES FOR CATEGORIES:**
+    1. If the 'transaction_type' is 'Expense', you MUST choose the 'category' from this EXACT list: {EXPENSE_CATEGORIES}.
+    2. If the 'transaction_type' is 'Income', you MUST choose the 'category' from this EXACT list: {INCOME_CATEGORIES}.
+    3. If the user's request is ambiguous or does not fit any category, you MUST use 'Others'. DO NOT invent new categories.
+
+    Example User Request: "add an expense of 15 dollars for coffee with my friends"
+    Correct Action Input: {{"title": "Coffee", "amount": 15.00, "category": "Food", "transaction_type": "Expense", "description": "Met with my friends"}}
     """
 )
 
@@ -246,5 +278,8 @@ def ai_agent_invoke():
         print(f"Agent execution failed: {e}")
         return jsonify({"status": "error", "message": "The AI agent encountered a problem. Please try rephrasing."}), 500
 
+# ==============================================================================
+# 5. RUN THE APP
+# ==============================================================================
 if __name__ == '__main__':
     app.run(host='0.0.0.0', debug=True)

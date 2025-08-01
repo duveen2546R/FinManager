@@ -1,3 +1,4 @@
+import 'package:finmanager/Screens/config.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -24,7 +25,6 @@ class _AiAgentScreenState extends State<AiAgentScreen> {
   final List<ChatMessage> _messages = [];
   bool _isLoading = false;
 
-  // State variables for Speech-to-Text and Text-to-Speech
   final SpeechToText _speechToText = SpeechToText();
   final FlutterTts _flutterTts = FlutterTts();
   bool _speechEnabled = false;
@@ -32,14 +32,14 @@ class _AiAgentScreenState extends State<AiAgentScreen> {
 
   final List<String> _examplePrompts = [
     "How much did I spend on Food this month?",
-    "What was my biggest expense in July?",
-    "Summarize my spending for last week.",
+    "What was my biggest expense in August?",
+    "Add a 500 rupee expense for a movie ticket",
   ];
 
   @override
   void initState() {
     super.initState();
-    _messages.add(ChatMessage(text: "Hello! How can I help you with your finances today? You can ask me anything about your spending history.", isUser: false));
+    _messages.add(ChatMessage(text: "Hello! How can I help you with your finances today? You can ask me to find or add transactions.", isUser: false));
     _initSpeech();
   }
   
@@ -51,16 +51,11 @@ class _AiAgentScreenState extends State<AiAgentScreen> {
   void _startListening() async {
     await _speechToText.listen(
       onResult: (result) {
-        setState(() {
-          _controller.text = result.recognizedWords;
-        });
-        // Automatically send message when user is done talking
-        if (result.finalResult) {
-          _sendMessage();
-        }
+        setState(() => _controller.text = result.recognizedWords);
+        if (result.finalResult) _sendMessage();
       },
-      listenFor: const Duration(seconds: 10), // Listen for up to 10 seconds
-      pauseFor: const Duration(seconds: 3), // Stop if user pauses for 3 seconds
+      listenFor: const Duration(seconds: 10),
+      pauseFor: const Duration(seconds: 3),
     );
     setState(() => _isListening = true);
   }
@@ -99,15 +94,23 @@ class _AiAgentScreenState extends State<AiAgentScreen> {
     _controller.clear();
     _scrollToBottom();
 
-    const String apiUrl = 'http://127.0.0.1:5000/ai/agent/invoke'; 
+    // !! CRITICAL !!
+    // Replace with your computer's local network IP address.
+    const String apiUrl = AppConfig.aiAgentEndpoint; // <-- Example IP
+
+    // --- THIS IS THE CRUCIAL PART THAT FIXES THE ERROR ---
+    // We get the user's current local date and time.
+    final String currentDate = DateTime.now().toIso8601String();
 
     try {
       final response = await http.post(
         Uri.parse(apiUrl),
         headers: {'Content-Type': 'application/json'},
+        // The body MUST contain all three keys.
         body: jsonEncode({
           'user_id': widget.userId,
           'question': messageText,
+          'current_date': currentDate, 
         }),
       );
 
@@ -116,7 +119,7 @@ class _AiAgentScreenState extends State<AiAgentScreen> {
 
       if (response.statusCode == 200 && responseData['status'] == 'success') {
         botResponse = responseData['answer'];
-        _speak(botResponse); // Automatically speak the AI's response
+        _speak(botResponse);
       } else {
         botResponse = responseData['message'] ?? "Sorry, I encountered an error.";
       }

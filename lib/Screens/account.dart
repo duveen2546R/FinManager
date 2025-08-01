@@ -111,7 +111,6 @@ class AccountScreen extends StatelessWidget {
           ),
           const SizedBox(height: 24),
 
-          // --- Menu Options Card ---
           Card(
             color: cardColor,
             elevation: 2,

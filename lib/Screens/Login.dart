@@ -1,3 +1,4 @@
+import 'package:finmanager/Screens/config.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http; // Import the http package
 import 'dart:convert'; // Import for json encoding/decoding
@@ -30,7 +31,7 @@ class _LoginPageDesignState extends State<LoginPageDesign> {
     });
 
     // --- CRITICAL: Use your computer's actual network IP address ---
-    const String apiUrl = 'http://127.0.0.1:5000/login';
+    const String apiUrl =AppConfig.loginEndpoint;
 
     try {
       final response = await http.post(

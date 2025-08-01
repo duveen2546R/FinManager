@@ -16,7 +16,6 @@ class AllTransactionsScreen extends StatefulWidget {
 }
 
 class _AllTransactionsScreenState extends State<AllTransactionsScreen> {
-  // State variables for filtering and sorting
   late List<Transaction> _processedTransactions;
   TransactionTypeFilter _selectedFilter = TransactionTypeFilter.all;
   SortOrder _sortOrder = SortOrder.newestFirst;
@@ -32,10 +31,9 @@ class _AllTransactionsScreenState extends State<AllTransactionsScreen> {
   void initState() {
     super.initState();
     _processedTransactions = List.from(widget.allTransactions);
-    _applyFiltersAndSort(); // Apply default sorting on initial load
+    _applyFiltersAndSort(); 
   }
 
-  // Central function to apply the current filter and sort order
   void _applyFiltersAndSort() {
     List<Transaction> tempTransactions = List.from(widget.allTransactions);
 
