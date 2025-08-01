@@ -98,8 +98,6 @@ class _AiAgentScreenState extends State<AiAgentScreen> {
     // Replace with your computer's local network IP address.
     const String apiUrl = AppConfig.aiAgentEndpoint; // <-- Example IP
 
-    // --- THIS IS THE CRUCIAL PART THAT FIXES THE ERROR ---
-    // We get the user's current local date and time.
     final String currentDate = DateTime.now().toIso8601String();
 
     try {
