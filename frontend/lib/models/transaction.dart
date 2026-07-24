@@ -1,4 +1,4 @@
-// Domain model. Mirrors src/models.js transactionFromJson().
+// Transaction domain model.
 class Txn {
   final String id;
   final String title;

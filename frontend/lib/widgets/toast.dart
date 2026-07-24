@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 
-// Lightweight replacement for the RN <Toast> component (src/components/Toast.jsx),
-// itself a stand-in for Flutter's ScaffoldMessenger.showSnackBar — so here we
-// simply come full circle and use a themed SnackBar.
-// variant: 'error' (red, default) or 'success' (green).
+// Themed SnackBar helper.
+// variant: 'error' (red, default) or 'success' (lime).
 void showToast(BuildContext context, String message, {String variant = 'error'}) {
   final messenger = ScaffoldMessenger.of(context);
   messenger.clearSnackBars();

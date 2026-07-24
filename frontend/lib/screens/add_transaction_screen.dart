@@ -25,7 +25,7 @@ class AddTransactionArgs {
   const AddTransactionArgs({this.transaction});
 }
 
-// Mirrors src/screens/AddTransactionScreen.jsx.
+// Add or edit an income / expense transaction.
 class AddTransactionScreen extends StatefulWidget {
   static const route = '/add-transaction';
   const AddTransactionScreen({super.key});

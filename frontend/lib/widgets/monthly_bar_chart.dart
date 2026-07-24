@@ -4,7 +4,7 @@ import '../models/transaction.dart';
 import '../theme/app_colors.dart';
 import '../utils.dart';
 
-// Replaces src/components/MonthlyBarChart.jsx (react-native-chart-kit BarChart).
+// Bar chart of monthly expense totals.
 class MonthlyBarChart extends StatelessWidget {
   final List<Txn> transactions;
   final AppColors colors;

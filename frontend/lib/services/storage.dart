@@ -1,7 +1,8 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-// Thin wrapper around SharedPreferences. Mirrors src/storage.js.
+// Local persistence: SharedPreferences for non-sensitive values, secure
+// storage for JWT tokens.
 class Storage {
   static const _secure = FlutterSecureStorage();
   static Future<SharedPreferences> get _prefs =>

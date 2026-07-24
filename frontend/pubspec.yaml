@@ -12,18 +12,18 @@ dependencies:
     sdk: flutter
 
   cupertino_icons: ^1.0.8
-  http: ^1.2.2               # replaces axios (src/api/client.js)
-  shared_preferences: ^2.3.2 # replaces AsyncStorage (src/storage.js)
+  http: ^1.2.2               # REST client
+  shared_preferences: ^2.3.2 # non-sensitive local prefs (theme, profile)
   flutter_secure_storage: ^9.2.2 # encrypted access/refresh token storage
-  file_selector: ^1.0.3 # native CSV file selection (lightweight, no media deps)
-  csv: ^6.0.0 # quoted CSV parsing
-  provider: ^6.1.2           # theme state (src/theme/ThemeContext.jsx)
-  fl_chart: ^0.69.0          # replaces react-native-chart-kit (charts)
-  flutter_markdown: ^0.7.4   # replaces react-native-markdown-display (AI answers)
-  ionicons: ^0.2.2           # replaces @expo/vector-icons Ionicons
-  intl: ^0.19.0              # date formatting (src/utils.js)
-  speech_to_text: ^7.0.0     # replaces expo-speech-recognition (voice input)
-  flutter_tts: ^4.2.0        # replaces expo-speech (text-to-speech)
+  file_selector: ^1.0.3      # native CSV file selection
+  csv: ^6.0.0                # quoted CSV parsing
+  provider: ^6.1.2           # theme + app state
+  fl_chart: ^0.69.0          # pie / bar charts
+  flutter_markdown: ^0.7.4   # renders AI answers
+  ionicons: ^0.2.2           # icon set
+  intl: ^0.19.0              # date/number formatting
+  speech_to_text: ^7.0.0     # voice input
+  flutter_tts: ^4.2.0        # spoken replies
 
 dev_dependencies:
   flutter_test:

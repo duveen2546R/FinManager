@@ -50,7 +50,7 @@ class FinManagerApp extends StatelessWidget {
     );
     final colors = themeProvider.colors;
 
-    // Status bar icons follow the theme (StatusBar style in App.jsx).
+    // Status bar icons follow the active theme.
     SystemChrome.setSystemUIOverlayStyle(
       colors.isDark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark,
     );
@@ -104,7 +104,7 @@ class FinManagerApp extends StatelessWidget {
   }
 }
 
-// Decides the initial screen based on stored login state (App.jsx useEffect).
+// Decides the initial screen based on stored login state.
 class _RootDecider extends StatefulWidget {
   const _RootDecider();
 

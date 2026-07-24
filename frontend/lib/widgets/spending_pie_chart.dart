@@ -2,7 +2,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 
-// Replaces src/components/SpendingPieChart.jsx (react-native-chart-kit PieChart).
+// Pie chart of expense spend by category.
 class SpendingPieChart extends StatelessWidget {
   final Map<String, double> spendingByCategory;
   final AppColors colors;

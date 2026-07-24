@@ -24,7 +24,7 @@ const _examplePrompts = [
   'Add a 500 rupee expense for a movie ticket',
 ];
 
-// Mirrors src/screens/AiAgentScreen.jsx.
+// Conversational AI assistant: answers money questions and adds transactions.
 class AiAgentScreen extends StatefulWidget {
   static const route = '/ai-agent';
   const AiAgentScreen({super.key});

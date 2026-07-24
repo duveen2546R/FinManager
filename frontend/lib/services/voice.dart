@@ -1,8 +1,7 @@
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:speech_to_text/speech_to_text.dart';
 
-// Wrapper around speech_to_text / flutter_tts. Mirrors src/voice.js +
-// the expo-speech usage in AiAgentScreen. Fails gracefully when the native
+// Voice input (speech_to_text) wrapper that fails gracefully when the native
 // speech module isn't available on the device.
 class VoiceInput {
   static final SpeechToText _speech = SpeechToText();
@@ -57,7 +56,7 @@ class VoiceInput {
   }
 }
 
-// Text-to-speech. Mirrors the expo-speech `Speech.speak` / `Speech.stop` usage.
+// Text-to-speech for spoken AI replies.
 class TtsService {
   static final FlutterTts _tts = FlutterTts();
 

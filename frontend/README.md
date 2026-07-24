@@ -1,69 +1,53 @@
-# FinManager — Flutter Frontend
+# FinManager — Flutter client
 
-This is the Flutter port of the FinManager frontend, migrated from the Expo /
-React Native app that lived at the repository root (`App.jsx`, `src/`). It talks
-to the same unchanged Flask backend (`../backend/app.py`).
+The FinManager app for **iOS, Android, and web**. A light "neobank" UI (flat
+white cards, lime accent, bold type) with a full dark mode, talking to the Flask
+API in [`../backend`](../backend).
 
-## Running
+## Run
 
 ```bash
-cd finmanager_app
 flutter pub get
-flutter run          # pick a device/emulator
+flutter run            # a connected device / emulator
+flutter run -d chrome  # in a browser
 ```
 
-The backend base URL is configured in `lib/config.dart`
-(`http://savorgo.centralindia.cloudapp.azure.com:5001`).
+Set the API URL in [`lib/config.dart`](lib/config.dart):
 
-## Architecture / file mapping
+```dart
+static const String baseUrl = 'http://192.168.1.10:5001';  // LAN IP or deployed URL
+```
 
-The Dart layout mirrors the original RN `src/` tree one-to-one:
+## Build
 
-| React Native (`src/…`)               | Flutter (`lib/…`)                        |
-| ------------------------------------ | ---------------------------------------- |
-| `config.js`                          | `config.dart`                            |
-| `models.js`                          | `models/transaction.dart`                |
-| `storage.js` (AsyncStorage)          | `services/storage.dart` (shared_preferences) |
-| `api/client.js` (axios)              | `services/api.dart` (http)               |
-| `voice.js` + `expo-speech`           | `services/voice.dart` (speech_to_text + flutter_tts) |
-| `utils.js`                           | `utils.dart`                             |
-| `theme/ThemeContext.jsx`             | `theme/theme_provider.dart` + `theme/app_colors.dart` |
-| `components/Toast.jsx`               | `widgets/toast.dart` (themed SnackBar)   |
-| `components/SpendingPieChart.jsx`    | `widgets/spending_pie_chart.dart` (fl_chart) |
-| `components/MonthlyBarChart.jsx`     | `widgets/monthly_bar_chart.dart` (fl_chart) |
-| auth field styles (inline in RN)     | `widgets/auth_fields.dart`               |
-| `App.jsx` (navigation)               | `main.dart` (named routes)               |
-| `screens/FirstPageScreen.jsx`        | `screens/first_page_screen.dart`         |
-| `screens/LoginScreen.jsx`            | `screens/login_screen.dart`              |
-| `screens/RegisterScreen.jsx`         | `screens/register_screen.dart`           |
-| `screens/HomeScreen.jsx`             | `screens/home_screen.dart`               |
-| `screens/AddTransactionScreen.jsx`   | `screens/add_transaction_screen.dart`    |
-| `screens/AiAgentScreen.jsx`          | `screens/ai_agent_screen.dart`           |
-| `screens/AllTransactionsScreen.jsx`  | `screens/all_transactions_screen.dart`   |
-| `screens/AccountScreen.jsx`          | `screens/account_screen.dart`            |
+```bash
+flutter build apk      # Android
+flutter build ios      # iOS
+flutter build web      # Web → build/web/
+```
 
-## Package equivalents
+## Layout
 
-| RN dependency                          | Flutter package    |
-| -------------------------------------- | ------------------ |
-| axios                                  | http               |
-| @react-native-async-storage            | shared_preferences |
-| React context (theme)                  | provider           |
-| react-native-chart-kit                 | fl_chart           |
-| react-native-markdown-display          | flutter_markdown   |
-| @expo/vector-icons (Ionicons)          | ionicons           |
-| @react-navigation                      | Navigator (named routes) |
-| expo-speech-recognition                | speech_to_text     |
-| expo-speech                            | flutter_tts        |
-| @react-native-community/datetimepicker | showDatePicker     |
+```
+lib/
+├── main.dart          # entry, theme, routes, responsive wrapper
+├── config.dart        # backend base URL
+├── models/            # transaction, insight, chat, expense-setup
+├── services/          # api (JWT client + auto-refresh), storage, voice
+├── theme/             # colors, theme provider (light/dark/system)
+├── widgets/           # cards, charts, bottom nav, inputs, toast
+└── screens/           # first, login, register, forgot-password, home,
+                       #   add/edit transaction, activity, AI chat, chat
+                       #   history, expense setup, CSV import, account
+```
 
 ## Notes
 
-- Navigation state (`user_id`, transactions) is passed via typed route
-  argument classes (`HomeArgs`, `AddTransactionArgs`, etc.).
-- The AI answers render Markdown; user bubbles are plain text — matching the RN
-  behaviour.
-- Voice input degrades gracefully: the mic button only appears when the device
-  reports speech recognition is available.
-- Native permissions (microphone, cleartext HTTP) are configured in
-  `android/app/src/main/AndroidManifest.xml` and `ios/Runner/Info.plist`.
+- **Auth**: JWT access/refresh tokens in encrypted storage, auto-refreshed on
+  401; expired sessions return to the landing screen.
+- **Responsive**: phone-first; on web/tablet/desktop it renders as a centered,
+  phone-width panel.
+- **App icon**: regenerate from `assets/icon.png` with
+  `dart run flutter_launcher_icons`.
+- **Native permissions** (microphone, cleartext HTTP for local dev) are set in
+  `ios/Runner/Info.plist` and `android/app/src/main/AndroidManifest.xml`.

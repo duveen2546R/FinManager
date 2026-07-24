@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../services/storage.dart';
 import 'app_colors.dart';
 
-// Theme state. Mirrors src/theme/ThemeContext.jsx ThemeProvider.
+// App theme state (light / dark / system), persisted on device.
 // mode is one of 'system' | 'light' | 'dark'.
 class ThemeProvider extends ChangeNotifier {
   // The Neobank design is light-first: default to light until the user picks

@@ -15,7 +15,7 @@ class AllTransactionsArgs {
   const AllTransactionsArgs({required this.transactions});
 }
 
-// Mirrors src/screens/AllTransactionsScreen.jsx.
+// Full transaction history with grouping, sorting, filtering, edit + delete.
 class AllTransactionsScreen extends StatefulWidget {
   static const route = '/all-transactions';
   const AllTransactionsScreen({super.key});

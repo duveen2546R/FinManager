@@ -1,7 +1,7 @@
 import 'package:flutter/widgets.dart';
 import 'package:ionicons/ionicons.dart';
 
-// Shared helpers used across screens. Mirrors src/utils.js.
+// Shared formatting and icon helpers used across screens.
 
 // Maps a transaction category to an Ionicons glyph.
 const Map<String, IconData> categoryIcons = {

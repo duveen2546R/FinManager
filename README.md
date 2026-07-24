@@ -1,104 +1,159 @@
-# FinManager — AI-Powered Personal Finance Tracker
+# FinManager — AI-Powered Personal Finance
 
-A full-stack, cross-platform personal finance app. The mobile client is built with
-**Flutter (Dart)** and talks to a **Python / Flask** backend that includes a
-conversational AI agent (LangChain + Groq) for querying and adding transactions in
-natural language — including voice input and spoken replies.
-
-> **Migration note:** The frontend has been migrated **React Native (Expo) → Flutter**,
-> and now lives in [`frontend/`](frontend/). The old Expo/RN sources have
-> been removed. The Flask backend and PostgreSQL schema are **unchanged** by the
-> migration. See [`frontend/README.md`](frontend/README.md) for a full
-> RN → Flutter file-and-package mapping.
+FinManager is a cross-platform personal-finance app: a **Flutter** client (iOS,
+Android, and web) backed by a **Python / Flask** API with a conversational AI
+assistant, deterministic spending insights, and CSV statement imports. The UI is
+a clean, light "neobank" design — flat white cards, a lime accent, and bold
+typography — with a full dark mode.
 
 ---
 
-## 🌟 Features
+## ✨ Features
 
-- **Secure auth** — registration & login with `bcrypt` password hashing.
-- **Transactions** — add/track income & expenses with title, description, category, amount, and date.
-- **Dashboard** — total balance, daily average & highest spend, an expense-breakdown **pie chart**, and a **monthly-spending bar chart**.
-- **History** — all transactions grouped by date, with filtering (All / Income / Expense) and sorting (date, amount) and expandable descriptions.
-- **Conversational AI agent** — ask "How much did I spend on Food last month?" or say "Add a ₹500 expense for a movie ticket."
-- **Voice** — speech-to-text input (`speech_to_text`) and text-to-speech replies (`flutter_tts`).
-- **Theming** — light / dark / system modes, persisted on-device.
+**Accounts & security**
+- Email/password **registration and login** with `bcrypt` hashing.
+- **JWT** access + refresh tokens; tokens stored in encrypted device storage and
+  auto-refreshed. Server-side **logout** revokes the token.
+- **Forgot / reset password** via a one-time emailed code.
+- **Delete account** (password-confirmed) and **export my data**.
+
+**Money tracking**
+- **Add, edit, and delete** income and expenses (title, amount, category,
+  date, description).
+- Strict category sets — Expense: Food, Travel, Bills, Shopping, Rent, Others;
+  Income: Salary, Bonus, Gift, Investment, Others.
+- **Dashboard** — a bold balance card (with a hide/show toggle), a horizontal
+  stat rail (income, spending, daily average, highest), an **expense-breakdown
+  pie chart**, a **monthly-spending bar chart**, and recent transactions.
+- **Activity** screen — full history grouped by date, with **sort** (newest /
+  oldest / amount) and **filter** (all / income / expense), expandable notes,
+  and per-row **edit / delete**.
+
+**AI assistant**
+- A multi-turn chat that **answers questions about your money** from a
+  server-computed snapshot (balances, recent activity, category spend) — it
+  never guesses numbers.
+- **Adds transactions from natural language** — e.g. "add a ₹500 expense for a
+  movie ticket." If details are missing it **asks follow-up questions**, then
+  records the transaction and **auto-categorizes** it into the allowed set.
+- **Voice input** (speech-to-text) and optional **spoken replies**
+  (text-to-speech). Chats are saved as **sessions** you can revisit.
+
+**Insights & planning**
+- **Deterministic, evidence-backed expense insights** (e.g. likely
+  subscriptions, spending spikes, upcoming commitments) with thumbs-up /
+  not-right / dismiss feedback.
+- **Spending guidance** — a "safe to spend this week" allowance derived from
+  your own history.
+- **Recurring commitments** and **merchant rules** (auto-rename / auto-categorize
+  recurring merchants) under *Expense setup*.
+
+**Imports**
+- **CSV statement import** — pick a file, review the parsed rows (duplicates are
+  detected and excluded), then confirm which become transactions.
+
+**Experience**
+- **Light / dark / system** theme, persisted on device.
+- **Responsive** — a phone-first UI that stays a centered, phone-width panel on
+  web, tablets, and laptops.
 
 ---
 
-## 🧱 Tech Stack
+## 🧱 Tech stack
 
 | Area | Technology |
 | :--- | :--- |
-| **Frontend** | Flutter (Dart, SDK ≥ 3.10) |
-| | Navigator with named routes + typed route arguments |
-| | `http` · `fl_chart` · `flutter_markdown` · `ionicons` |
-| | `speech_to_text` (STT) · `flutter_tts` (TTS) |
-| | `provider` + `shared_preferences` (theme & session) |
-| **Backend** | Python + Flask, `Flask-Cors`, `Flask-Bcrypt` |
+| **Client** | Flutter (Dart, SDK ≥ 3.10) — iOS · Android · Web |
+| | `provider` state · `http` · `flutter_secure_storage` + `shared_preferences` |
+| | `fl_chart` · `flutter_markdown` · `ionicons` · `intl` |
+| | `speech_to_text` (voice in) · `flutter_tts` (voice out) · `file_selector` + `csv` (imports) |
+| **API** | Python + Flask, `Flask-JWT-Extended`, `Flask-Bcrypt`, `Flask-Cors`, `Flask-Limiter` |
 | | PostgreSQL (`psycopg2-binary`) |
-| | LangChain agent + **Groq** (`llama-3.3-70b-versatile`) |
-| | `python-dotenv` for config |
+| | AI chat via **Groq** (`langchain-groq`, `llama-3.3-70b-versatile`) |
+| | Deterministic insight engine (`expense_intelligence.py`) |
+| | `gunicorn` (production WSGI), `python-dotenv` |
 
 ---
 
-## 📁 Project Structure
+## 📁 Project structure
 
 ```
 FinManager/
-├── frontend/              # ← Flutter frontend (the app)
+├── frontend/                    # Flutter app (iOS · Android · Web)
 │   ├── lib/
-│   │   ├── main.dart            # App entry, theme, named-route table
-│   │   ├── config.dart          # ← Backend API base URL lives here
-│   │   ├── models/transaction.dart
-│   │   ├── services/            # api.dart, storage.dart, voice.dart
-│   │   ├── theme/               # theme_provider.dart, app_colors.dart
-│   │   ├── utils.dart
-│   │   ├── widgets/             # toast, spending_pie_chart, monthly_bar_chart, auth_fields
-│   │   └── screens/             # FirstPage, Login, Register, Home, AddTransaction,
-│   │                            #   AiAgent, AllTransactions, Account
-│   ├── assets/                  # Images & app icon
-│   ├── android/  ios/           # Native projects (committed; hold permissions config)
-│   ├── pubspec.yaml
-│   └── README.md                # RN → Flutter file/package mapping
+│   │   ├── main.dart            # entry, theme, routes, responsive wrapper
+│   │   ├── config.dart          # ← backend base URL
+│   │   ├── models/              # transaction, insight, chat, expense-setup
+│   │   ├── services/            # api (JWT client), storage, voice
+│   │   ├── theme/               # colors + theme provider
+│   │   ├── widgets/             # cards, charts, nav, inputs, toast
+│   │   └── screens/             # first, login, register, forgot-password,
+│   │                            #   home, add/edit txn, activity, AI chat,
+│   │                            #   chat history, expense setup, import, account
+│   ├── assets/                  # logo + app icon
+│   └── pubspec.yaml
 │
-└── backend/                     # Python / Flask API (unchanged by the migration)
-    ├── app.py
-    ├── Schema.sql
+└── backend/                     # Flask API
+    ├── app.py                   # routes, auth, transactions, chat, imports
+    ├── expense_intelligence.py  # deterministic insight/story engine
+    ├── Schema.sql               # full schema (fresh database)
+    ├── migrations/              # incremental SQL migrations
+    ├── tests/                   # pytest suite
     ├── requirements.txt
     └── .env.example
 ```
 
 ---
 
-## 🚀 Getting Started
+## 🚀 Getting started
 
 ### Prerequisites
-
-- [Flutter SDK](https://docs.flutter.dev/get-started/install) 3.10+ (Dart is bundled)
-- [Python](https://www.python.org/) 3.10+ and PostgreSQL
-- **For device builds / voice:** Xcode (iOS) or Android Studio (Android).
-  Run `flutter doctor` to verify your toolchains.
+- [Flutter SDK](https://docs.flutter.dev/get-started/install) 3.10+ (Dart bundled)
+- Python 3.10+ and PostgreSQL
+- For device builds / voice: Xcode (iOS) or Android Studio (Android).
+  Run `flutter doctor` to check your toolchains.
 
 ### 1. Backend (Flask API)
 
 ```bash
 cd backend
 
-python3 -m venv venv
-source venv/bin/activate            # Windows: venv\Scripts\activate
-
+python3 -m venv .venv
+source .venv/bin/activate            # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-- **Database:** create a PostgreSQL database and run `Schema.sql` to create the `customers` and `transactions` tables.
-- **Secrets:** copy `backend/.env.example` → `backend/.env` and fill in your PostgreSQL credentials (`DB_*`, `DB_URI`) and your `GROQ_API_KEY`. Never commit `.env` — it's gitignored.
-- **Run it:**
+Configure secrets — copy `.env.example` → `.env` and fill in:
 
-  ```bash
-  python app.py
-  ```
+```
+DB_HOST / DB_NAME / DB_USER / DB_PASSWORD / DB_PORT   # PostgreSQL
+DB_URI=postgresql+psycopg2://user:pass@host:5432/finmanager
+JWT_SECRET_KEY   # python -c "import secrets; print(secrets.token_urlsafe(48))"
+GROQ_API_KEY     # optional — enables the LLM assistant
+CORS_ORIGINS     # web origins only (e.g. http://localhost:3000); inert for mobile
+# Optional email (password reset / welcome): BREVO_API_KEY, MAIL_FROM
+```
 
-  The server listens on `http://0.0.0.0:5001`.
+Create the database tables (choose one):
+
+```bash
+psql -d finmanager -f Schema.sql                                 # new database
+psql -d finmanager -f migrations/0001_expense_intelligence.sql   # existing database
+```
+
+Run it:
+
+```bash
+python app.py                        # dev server on http://0.0.0.0:5001
+# or, production:
+gunicorn app:app --bind 0.0.0.0:$PORT --workers 1 --threads 4 --timeout 120
+```
+
+Run the tests:
+
+```bash
+python -m pytest tests -q            # from the backend/ directory
+```
 
 ### 2. Frontend (Flutter)
 
@@ -107,64 +162,88 @@ cd frontend
 flutter pub get
 ```
 
-**Point the app at your backend** — edit `lib/config.dart`:
+Point the app at your API — edit `lib/config.dart`:
 
 ```dart
-// Use your machine's LAN IP (not 127.0.0.1) so a device/simulator can reach it.
+// Use your machine's LAN IP (not 127.0.0.1) so a physical device can reach it,
+// or your deployed URL.
 static const String baseUrl = 'http://192.168.1.10:5001';
 ```
 
-**Run it:**
+Run it:
 
 ```bash
-flutter run            # pick a connected device or emulator
+flutter run                 # pick a connected device or emulator
+flutter run -d chrome       # run in a browser (web / laptop)
 ```
 
-Build release binaries with `flutter build apk` (Android) or `flutter build ios` (iOS).
+Build releases:
 
-> **Cleartext HTTP:** the app targets an `http://` backend, and iOS/Android block
-> cleartext by default. The needed exceptions are already configured
-> (`NSAllowsArbitraryLoads` in `ios/Runner/Info.plist`, `usesCleartextTraffic` in
-> `android/app/src/main/AndroidManifest.xml`). For production, serve the backend
-> over **HTTPS** instead.
+```bash
+flutter build apk           # Android
+flutter build ios           # iOS
+flutter build web           # Web → build/web/
+```
 
-> **Voice permissions:** microphone + speech-recognition usage descriptions are set
-> in `ios/Runner/Info.plist`, and `RECORD_AUDIO` (plus recognition/TTS `<queries>`)
-> in the Android manifest. The mic button appears only when the device reports that
-> speech recognition is available.
+> **Cleartext HTTP:** if your API is served over `http://`, the app already
+> includes the iOS/Android exceptions needed for local development. Serve the
+> API over **HTTPS** in production.
+>
+> **Voice permissions:** microphone + speech usage descriptions are configured
+> in the iOS `Info.plist` and Android manifest. The mic button appears only when
+> the device reports speech recognition is available.
 
 ---
 
-## 📖 API Endpoints
+## 📖 API overview
+
+All private routes require `Authorization: Bearer <access_token>`; ownership is
+derived from the token (no user id is sent by the client).
 
 | Endpoint | Method | Description |
 | :--- | :---: | :--- |
-| `/register` | `POST` | Register a new user |
-| `/login` | `POST` | Authenticate and return user details |
-| `/transaction` | `POST` | Add an income or expense transaction |
-| `/transactions/<user_id>` | `GET` | Fetch all transactions for a user |
-| `/ai/agent/invoke` | `POST` | Send a natural-language query to the AI agent |
+| `/auth/register`, `/auth/login` | `POST` | Create account / sign in → access + refresh tokens |
+| `/auth/refresh` | `POST` | Exchange a refresh token for a new access token |
+| `/auth/logout` | `POST` | Revoke the current token |
+| `/auth/forgot-password`, `/auth/reset-password` | `POST` | Emailed reset-code flow |
+| `/transactions` | `GET`/`POST` | List (paginated) / add a transaction |
+| `/transactions/<id>` | `GET`/`PATCH`/`DELETE` | Read / edit / delete a transaction |
+| `/ai/agent/invoke`, `/chat/sessions/<id>/messages` | `POST` | Chat with the assistant (answers + adds transactions) |
+| `/chat/sessions`, `/chat/sessions/<id>` | `GET`/`POST`/`PATCH`/`DELETE` | Manage chat sessions & history |
+| `/expense-insights`, `/expense-insights/<id>/feedback` | `GET`/`POST` | Insights + feedback |
+| `/expense-story`, `/expense-guidance` | `GET` | Narrative summary / weekly allowance |
+| `/commitments`, `/commitments/<id>` | `GET`/`POST`/`PATCH`/`DELETE` | Recurring commitments |
+| `/merchant-rules`, `/merchant-rules/<id>` | `GET`/`POST`/`DELETE` | Merchant auto-categorization rules |
+| `/imports`, `/imports/<id>`, `/imports/<id>/confirm` | `POST`/`GET`/`POST` | CSV import review & confirm |
+| `/me`, `/me/export` | `DELETE`/`GET` | Delete account / export data |
+
+---
+
+## ☁️ Deployment notes
+
+- **Backend** deploys cleanly to any Python host (e.g. Render) with build
+  `pip install -r requirements.txt` and start
+  `gunicorn app:app --bind 0.0.0.0:$PORT --workers 1 --threads 4 --timeout 120`.
+  Set `FLASK_ENV=production` and a real `JWT_SECRET_KEY`; run the schema on the
+  database before first use.
+- **Web build** pins Flutter 3.10+; if a build host installs a much newer
+  Flutter, pin the toolchain version in your build command.
+- Update `frontend/lib/config.dart` `baseUrl` to your deployed API URL. For web
+  deployments, add the site's origin to the backend `CORS_ORIGINS`.
 
 ---
 
 ## 🛠️ Troubleshooting
 
-**`flutter pub get` fails / dependency version conflicts.**
-Ensure your Flutter SDK is 3.10+ (`flutter --version`). Run `flutter clean` then
-`flutter pub get` if a stale build is interfering.
-
-**AI agent import error (`No module named 'langchain_groq'`).**
-Make sure `langchain-groq` is installed (it's in `requirements.txt`); the agent in
-`app.py` uses Groq, not Google Gemini.
-
-**Voice mic button missing / no transcription.** The device or emulator must have a
-speech-recognition service available and the microphone permission granted. On a
-fresh iOS simulator, enable a keyboard/dictation locale; on Android, ensure a
-recognition service (e.g. Google) is present.
-
-**Can't reach the backend from a device.** Use your machine's LAN IP in
-`lib/config.dart` (not `127.0.0.1`/`localhost`), and make sure both are on the same
-network and the backend is bound to `0.0.0.0`.
+- **Login/500 right after setup** — the database tables aren't created yet; run
+  `Schema.sql` (or the migration).
+- **Can't reach the API from a device** — use your machine's LAN IP in
+  `config.dart` (not `localhost`), on the same network, with the API bound to
+  `0.0.0.0`.
+- **AI assistant gives generic answers** — set `GROQ_API_KEY`; without it the
+  assistant falls back to a deterministic summary.
+- **Voice mic missing** — the device needs an available speech-recognition
+  service and granted microphone permission.
 
 ---
 
