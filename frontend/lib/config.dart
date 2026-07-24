@@ -1,6 +1,6 @@
 // Central place for the backend API configuration (v2 expense-intelligence API).
 class AppConfig {
-  static const String baseUrl = 'http://127.0.0.1:5001';
+  static const String baseUrl = 'https://finmanager-woa9.onrender.com';
 
   // Auth
   static String get register => '$baseUrl/auth/register';
