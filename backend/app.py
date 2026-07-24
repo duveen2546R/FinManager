@@ -386,9 +386,15 @@ def _normalise_transaction(payload: dict[str, Any], *, source: str | None = None
     transaction_type = transaction_type.capitalize() if transaction_type else ""
     if transaction_type not in {"Income", "Expense"}:
         raise ApiError("transaction_type must be Income or Expense.")
-    category = _text(payload.get("category", "Others"), "category", required=True, max_length=100)
+    category_raw = _text(payload.get("category", "Others"), "category", required=True, max_length=100)
     permitted_categories = EXPENSE_CATEGORIES if transaction_type == "Expense" else INCOME_CATEGORIES
-    if category not in permitted_categories:
+    # Match categories case-insensitively and store the canonical spelling, so
+    # "food", "FOOD" and "Food" are all accepted as "Food".
+    category = next(
+        (c for c in permitted_categories if c.casefold() == category_raw.casefold()),
+        None,
+    )
+    if category is None:
         raise ApiError("category is not valid for this transaction type.")
     source = source or _text(payload.get("source", "Manual"), "source", required=True, max_length=32)
     if source not in TRANSACTION_SOURCES:
@@ -1262,9 +1268,11 @@ def _agent_add_transaction(
     """
     transaction_type = str(proposed.get("transaction_type") or "Expense").strip().capitalize()
     allowed = EXPENSE_CATEGORIES if transaction_type == "Expense" else INCOME_CATEGORIES
-    category = proposed.get("category")
-    if category not in allowed:
-        category = "Others"
+    raw_category = str(proposed.get("category") or "")
+    # Case-insensitive match to the canonical category; unknowns become Others.
+    category = next(
+        (c for c in allowed if c.casefold() == raw_category.casefold()), "Others"
+    )
     payload = {
         "title": proposed.get("title"),
         "amount": proposed.get("amount"),
