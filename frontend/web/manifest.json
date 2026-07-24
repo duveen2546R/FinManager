@@ -3,9 +3,9 @@
     "short_name": "FinManager",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#C8E84E",
+    "theme_color": "#171717",
+    "description": "FinManager — AI-powered personal finance.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

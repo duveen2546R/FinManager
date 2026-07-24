@@ -1146,42 +1146,235 @@ def _recent_chat_messages(cursor: RealDictCursor, session_id: str, limit: int = 
     return cursor.fetchall()
 
 
-def _safe_chat_answer(question: str, history: list[dict[str, Any]], story: dict[str, Any]) -> str:
-    """Answer with bounded conversation context and no database/tool access."""
+def _financial_context(cursor: RealDictCursor, user_id: str) -> dict[str, Any]:
+    """Deterministic, read-only snapshot of the user's money for the assistant.
+
+    The model never touches the database or writes SQL; it only reasons over this
+    bounded, server-computed context, scoped to the current user's rows.
+    """
+    cursor.execute(
+        """
+        SELECT transaction_type, COALESCE(SUM(amount), 0) AS total, COUNT(*) AS count
+        FROM transactions WHERE user_id = %s GROUP BY transaction_type
+        """,
+        (user_id,),
+    )
+    totals = {row["transaction_type"]: row for row in cursor.fetchall()}
+    income = float(totals.get("Income", {}).get("total") or 0)
+    expense = float(totals.get("Expense", {}).get("total") or 0)
+    transaction_count = sum(int(row["count"]) for row in totals.values())
+
+    cursor.execute(
+        """
+        SELECT title, merchant, category, transaction_type, amount, date
+        FROM transactions WHERE user_id = %s
+        ORDER BY date DESC, created_at DESC LIMIT 15
+        """,
+        (user_id,),
+    )
+    recent = [
+        {
+            "date": row["date"].date().isoformat(),
+            "title": row["title"],
+            "merchant": row["merchant"],
+            "category": row["category"],
+            "type": row["transaction_type"],
+            "amount": float(row["amount"]),
+        }
+        for row in cursor.fetchall()
+    ]
+
+    cursor.execute(
+        """
+        SELECT category, COALESCE(SUM(amount), 0) AS total
+        FROM transactions WHERE user_id = %s AND transaction_type = 'Expense'
+          AND date >= date_trunc('month', CURRENT_TIMESTAMP)
+        GROUP BY category ORDER BY total DESC
+        """,
+        (user_id,),
+    )
+    this_month = {row["category"]: round(float(row["total"]), 2) for row in cursor.fetchall()}
+
+    cursor.execute(
+        """
+        SELECT category, COALESCE(SUM(amount), 0) AS total
+        FROM transactions WHERE user_id = %s AND transaction_type = 'Expense'
+        GROUP BY category ORDER BY total DESC LIMIT 5
+        """,
+        (user_id,),
+    )
+    top_categories = {row["category"]: round(float(row["total"]), 2) for row in cursor.fetchall()}
+
+    return {
+        "currency": "INR",
+        "transaction_count": transaction_count,
+        "totals": {
+            "income": round(income, 2),
+            "expense": round(expense, 2),
+            "balance": round(income - expense, 2),
+        },
+        "this_month_expense_by_category": this_month,
+        "top_expense_categories_all_time": top_categories,
+        "recent_transactions": recent,
+    }
+
+
+def _deterministic_chat_answer(context: dict[str, Any], story: dict[str, Any]) -> str:
+    """Grounded answer used when no LLM key is configured."""
+    if context["transaction_count"] == 0:
+        return (
+            "You haven't added any transactions yet. Add or import your income and "
+            "expenses, and I can break down your spending, balances, and recent activity."
+        )
+    totals = context["totals"]
+    recent = context["recent_transactions"][0]
+    return (
+        f"Snapshot: balance ₹{totals['balance']:.2f} (income ₹{totals['income']:.2f}, "
+        f"spending ₹{totals['expense']:.2f}). Your most recent transaction was "
+        f"\"{recent['title']}\" — ₹{recent['amount']:.2f} {recent['type'].lower()} "
+        f"in {recent['category']} on {recent['date']}. "
+        "Ask about a category, merchant, or period for more detail."
+    )
+
+
+def _parse_agent_json(raw: str) -> dict[str, Any] | None:
+    """Extract the first JSON object from the model's reply, tolerating prose."""
+    if not raw:
+        return None
+    match = re.search(r"\{.*\}", raw, re.DOTALL)
+    if not match:
+        return None
+    try:
+        parsed = json.loads(match.group(0))
+        return parsed if isinstance(parsed, dict) else None
+    except (json.JSONDecodeError, ValueError):
+        return None
+
+
+def _agent_add_transaction(
+    cursor: RealDictCursor, user_id: str, proposed: dict[str, Any]
+) -> dict[str, Any]:
+    """Validate an LLM-proposed transaction and insert it (source=AI).
+
+    The category is forced into the allowed set (anything else becomes
+    'Others'); every other field runs through the same strict validation as a
+    manual add. The model cannot bypass ownership, amount, or type checks.
+    """
+    transaction_type = str(proposed.get("transaction_type") or "Expense").strip().capitalize()
+    allowed = EXPENSE_CATEGORIES if transaction_type == "Expense" else INCOME_CATEGORIES
+    category = proposed.get("category")
+    if category not in allowed:
+        category = "Others"
+    payload = {
+        "title": proposed.get("title"),
+        "amount": proposed.get("amount"),
+        "transaction_type": transaction_type,
+        "category": category,
+        "description": proposed.get("description"),
+        "date": proposed.get("date"),
+        "source": "AI",
+    }
+    transaction = _normalise_transaction(payload, source="AI")
+    return _insert_transaction(cursor, user_id, transaction)
+
+
+def _agent_reply(
+    cursor: RealDictCursor,
+    user_id: str,
+    message: str,
+    history: list[dict[str, Any]],
+    story: dict[str, Any],
+    context: dict[str, Any],
+) -> str:
+    """A chat turn that can answer questions OR add a transaction.
+
+    The model only proposes a structured action as JSON; this server validates
+    and performs any write. It never writes SQL or touches the database itself.
+    Missing details are gathered conversationally across turns (the recent
+    history is the slot-filling state).
+    """
     api_key = os.getenv("GROQ_API_KEY")
-    if api_key:
-        try:
-            from langchain_groq import ChatGroq
+    if not api_key:
+        return _deterministic_chat_answer(context, story)
 
-            transcript = "\n".join(
-                f"{message['role'].capitalize()}: {message['content']}"
-                for message in history[-12:]
-            )
-            prompt = f"""You are FinManager's expense assistant. Continue the conversation naturally.
-You have no ability to access accounts, execute actions, add transactions, cancel subscriptions, or change data.
-Use only the factual expense context below for claims about this user's money. If it is insufficient, say so clearly.
-Do not give investment, lending, tax, or legal advice. Be concise and use Indian Rupees.
+    try:
+        from langchain_groq import ChatGroq
 
-Current expense context:
+        transcript = "\n".join(
+            f"{m['role'].capitalize()}: {m['content']}" for m in history[-12:]
+        )
+        today = datetime.now(timezone.utc).date().isoformat()
+        prompt = f"""You are FinManager's expense assistant. You can chat about the user's money and you can ADD a transaction (income or expense) to their account when they ask.
+
+Reply with ONLY a single JSON object (no markdown, nothing outside it), shaped exactly like:
+{{
+  "intent": "add_transaction" | "chat",
+  "ready_to_add": true | false,
+  "transaction": {{
+    "title": "short label e.g. Coffee",
+    "amount": 0,
+    "transaction_type": "Expense" | "Income",
+    "category": "one of the allowed categories",
+    "description": "optional note or null",
+    "date": "YYYY-MM-DD or null (null = today)"
+  }},
+  "reply": "what to say to the user"
+}}
+
+Adding a transaction:
+- Use intent="add_transaction" when the user wants to record/add/log an expense or income.
+- Required: title, amount, transaction_type. If any is missing or unclear, set ready_to_add=false and put a SHORT question in "reply" asking only for the missing detail. Keep the details you already know inside "transaction".
+- When title, amount and type are known, set ready_to_add=true.
+- transaction_type is "Income" for money received (salary, bonus, gift, refund, dividend); otherwise "Expense".
+- category MUST be exactly one of these — never invent others:
+    Expense: Food, Travel, Bills, Shopping, Rent, Others
+    Income: Salary, Bonus, Gift, Investment, Others
+  Map sensibly: coffee/restaurant/grocery/snacks/dinner/lunch -> Food; uber/taxi/train/flight/bus/fuel/cab -> Travel; electricity/water/internet/phone/wifi/recharge/bill -> Bills; clothes/movie/gadgets/shopping -> Shopping; rent -> Rent; salary/pay -> Salary; bonus -> Bonus; gift -> Gift; dividend/interest/investment -> Investment. If nothing fits, use Others.
+- Do NOT claim you added anything; the app performs the insert and confirms it.
+
+Chatting (intent="chat"): set transaction=null and answer using ONLY the snapshot below; never invent numbers. If a detail isn't there, say so.
+
+You cannot delete, edit, or cancel anything, and you give no investment/tax/legal advice. Use Indian Rupees (₹). Today is {today}.
+
+Authoritative account snapshot:
+{json.dumps(context, ensure_ascii=False)}
+
+Spending insights:
 {json.dumps(story, ensure_ascii=False)}
 
 Conversation:
 {transcript}
+"""
+        raw = ChatGroq(
+            model_name=os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile"),
+            temperature=0.1,
+            groq_api_key=api_key,
+        ).invoke(prompt).content
+        action = _parse_agent_json(raw)
+    except Exception:
+        app.logger.warning("Agent model unavailable; returning deterministic fallback.")
+        return _deterministic_chat_answer(context, story)
 
-Respond to the latest user message in under 220 words."""
-            answer = ChatGroq(
-                model_name=os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile"),
-                temperature=0.2,
-                groq_api_key=api_key,
-            ).invoke(prompt).content.strip()
-            if answer:
-                return answer[:4000]
-        except Exception:
-            app.logger.warning("Safe chat model unavailable; returning deterministic fallback.")
-    return (
-        f"{story['summary']} I’ll keep this conversation in your chat history. "
-        "For a precise answer, ask about a merchant, category, or a specific time period."
-    )
+    if action is None:
+        return _deterministic_chat_answer(context, story)
+
+    reply = str(action.get("reply") or "").strip()[:4000]
+    if action.get("intent") == "add_transaction":
+        if action.get("ready_to_add") and isinstance(action.get("transaction"), dict):
+            try:
+                created = _json(_agent_add_transaction(cursor, user_id, action["transaction"]))
+            except ApiError as exc:
+                return (
+                    f"I couldn't add that — {exc.message} "
+                    "Tell me the amount and what it was for."
+                )
+            return (
+                f"Added ₹{created['amount']:.2f} for \"{created['title']}\" under "
+                f"{created['category']} ({created['transaction_type']}) on "
+                f"{str(created['date'])[:10]}."
+            )
+        return reply or "Sure — what was it for, and how much?"
+    return reply or _deterministic_chat_answer(context, story)
 
 
 def _chat_title(message: str) -> str:
@@ -1262,7 +1455,10 @@ def _send_chat_message(payload: dict[str, Any], requested_session_id: str | None
         history = _recent_chat_messages(cursor, session_id)
         generated = _generated_insights(cursor, g.user_id)
         story = build_expense_story([_json(item) for item in generated if item["status"] == "open"])
-        answer = _safe_chat_answer(message, [_json(item) for item in history], story)
+        context = _financial_context(cursor, g.user_id)
+        answer = _agent_reply(
+            cursor, g.user_id, message, [_json(item) for item in history], story, context
+        )
         assistant_message = _insert_chat_message(
             cursor,
             session_id,

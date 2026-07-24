@@ -29,6 +29,20 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.13.1 # generates iOS/Android/web app icons
+
+# App icon generation: `dart run flutter_launcher_icons`
+flutter_launcher_icons:
+  image_path: "assets/icon.png"
+  android: true
+  ios: true
+  remove_alpha_ios: true
+  adaptive_icon_background: "#C8E84E"
+  adaptive_icon_foreground: "assets/icon_adaptive.png"
+  web:
+    generate: true
+    background_color: "#C8E84E"
+    theme_color: "#171717"
 
 flutter:
   uses-material-design: true

@@ -314,6 +314,94 @@ class _AllTransactionsScreenState extends State<AllTransactionsScreen> {
     });
   }
 
+  // Tap the ⋮ on a row → Edit / Delete actions.
+  Future<void> _showRowActions(Txn txn, AppColors colors) async {
+    await showModalBottomSheet(
+      context: context,
+      backgroundColor: colors.card,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      builder: (sheetContext) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 14, 20, 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: colors.border,
+                    borderRadius: BorderRadius.circular(100),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(txn.title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                      color: colors.text,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800)),
+              const SizedBox(height: 2),
+              Text('${txn.type} · ${txn.category} · ${formatRupee(txn.amount)}',
+                  style:
+                      TextStyle(color: colors.secondaryText, fontSize: 13)),
+              const SizedBox(height: 16),
+              _actionRow(colors, Ionicons.create_outline, 'Edit', colors.text,
+                  () {
+                Navigator.pop(sheetContext);
+                _editTransaction(txn);
+              }),
+              const SizedBox(height: 10),
+              _actionRow(colors, Ionicons.trash_outline, 'Delete',
+                  colors.expense, () {
+                Navigator.pop(sheetContext);
+                _confirmDelete(txn, colors);
+              }),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _actionRow(AppColors colors, IconData icon, String label, Color tint,
+      VoidCallback onTap) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: colors.elevated,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration:
+                  BoxDecoration(color: colors.card, shape: BoxShape.circle),
+              child: Icon(icon, size: 20, color: tint),
+            ),
+            const SizedBox(width: 14),
+            Text(label,
+                style: TextStyle(
+                    color: tint,
+                    fontSize: 15.5,
+                    fontWeight: FontWeight.w700)),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _row(Txn txn, AppColors colors) {
     final isExpense = txn.type == 'Expense';
     final hasDescription =
@@ -376,12 +464,12 @@ class _AllTransactionsScreenState extends State<AllTransactionsScreen> {
                 ),
                 IconButton(
                   icon: Icon(
-                    Ionicons.create_outline,
-                    size: 19,
+                    Ionicons.ellipsis_vertical,
+                    size: 18,
                     color: colors.secondaryText,
                   ),
-                  tooltip: 'Edit transaction',
-                  onPressed: () => _editTransaction(txn),
+                  tooltip: 'Options',
+                  onPressed: () => _showRowActions(txn, colors),
                 ),
                 if (isExpense)
                   Text(
