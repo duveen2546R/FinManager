@@ -1,5 +1,6 @@
 # Web framework + API security
 Flask==3.1.2
+gunicorn==23.0.0  # production WSGI server (Render start command)
 Flask-Cors==6.0.1
 Flask-Bcrypt==1.0.1
 Flask-JWT-Extended==4.7.1
