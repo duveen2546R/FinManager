@@ -1,0 +1,12 @@
+Flask
+Flask-Cors
+Flask-Bcrypt
+psycopg2-binary
+langchain
+langchain-community
+langchain-core
+langchain-google-genai
+langchain-groq
+python-dotenv
+google-genai
+SQLAlchemy

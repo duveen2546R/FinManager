@@ -1,0 +1,21 @@
+# Backend (Python / Flask) — see the root .gitignore for shared rules.
+
+# Virtual environments
+venv/
+.venv/
+env/
+
+# Byte-compiled / cache
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+
+# Secrets — never commit real credentials (DB URI, GROQ/Google API keys).
+.env
+.env.*
+!.env.example
+
+# Local SQLite / dumps, if any
+*.sqlite3
+*.db
