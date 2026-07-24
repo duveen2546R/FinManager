@@ -1,14 +1,15 @@
 # FinManager — AI-Powered Personal Finance Tracker
 
 A full-stack, cross-platform personal finance app. The mobile client is built with
-**React Native (Expo, JavaScript + JSX)** and talks to a **Python / Flask** backend
-that includes a conversational AI agent (LangChain + Groq) for querying and adding
-transactions in natural language — including voice input and spoken replies.
+**Flutter (Dart)** and talks to a **Python / Flask** backend that includes a
+conversational AI agent (LangChain + Groq) for querying and adding transactions in
+natural language — including voice input and spoken replies.
 
-> **Migration note:** The frontend was migrated from **Flutter/Dart → React Native (Expo)**.
-> The Flask backend and PostgreSQL schema are unchanged. The old iOS-native Siri App
-> Intents integration (Swift) was tied to the Flutter build and is **not** part of the
-> React Native port.
+> **Migration note:** The frontend has been migrated **React Native (Expo) → Flutter**,
+> and now lives in [`frontend/`](frontend/). The old Expo/RN sources have
+> been removed. The Flask backend and PostgreSQL schema are **unchanged** by the
+> migration. See [`frontend/README.md`](frontend/README.md) for a full
+> RN → Flutter file-and-package mapping.
 
 ---
 
@@ -17,9 +18,9 @@ transactions in natural language — including voice input and spoken replies.
 - **Secure auth** — registration & login with `bcrypt` password hashing.
 - **Transactions** — add/track income & expenses with title, description, category, amount, and date.
 - **Dashboard** — total balance, daily average & highest spend, an expense-breakdown **pie chart**, and a **monthly-spending bar chart**.
-- **History** — all transactions grouped by date, with filtering (All / Income / Expense) and sorting (date, amount).
+- **History** — all transactions grouped by date, with filtering (All / Income / Expense) and sorting (date, amount) and expandable descriptions.
 - **Conversational AI agent** — ask "How much did I spend on Food last month?" or say "Add a ₹500 expense for a movie ticket."
-- **Voice** — speech-to-text input (`expo-speech-recognition`) and text-to-speech replies (`expo-speech`).
+- **Voice** — speech-to-text input (`speech_to_text`) and text-to-speech replies (`flutter_tts`).
 - **Theming** — light / dark / system modes, persisted on-device.
 
 ---
@@ -28,11 +29,11 @@ transactions in natural language — including voice input and spoken replies.
 
 | Area | Technology |
 | :--- | :--- |
-| **Frontend** | React Native + Expo (SDK 52), JavaScript / JSX |
-| | React Navigation (native stack) |
-| | `axios` · `react-native-chart-kit` + `react-native-svg` · `react-native-markdown-display` |
-| | `expo-speech-recognition` (STT) · `expo-speech` (TTS) |
-| | React Context + `@react-native-async-storage/async-storage` (theme & session) |
+| **Frontend** | Flutter (Dart, SDK ≥ 3.10) |
+| | Navigator with named routes + typed route arguments |
+| | `http` · `fl_chart` · `flutter_markdown` · `ionicons` |
+| | `speech_to_text` (STT) · `flutter_tts` (TTS) |
+| | `provider` + `shared_preferences` (theme & session) |
 | **Backend** | Python + Flask, `Flask-Cors`, `Flask-Bcrypt` |
 | | PostgreSQL (`psycopg2-binary`) |
 | | LangChain agent + **Groq** (`llama-3.3-70b-versatile`) |
@@ -44,33 +45,28 @@ transactions in natural language — including voice input and spoken replies.
 
 ```
 FinManager/
-├── App.jsx                 # Root component + navigation stack
-├── index.js                # Expo entry point
-├── app.json                # Expo config (permissions, plugins, icons)
-├── package.json
-├── assets/                 # Images & app icon (shared, kept from original)
-├── plugins/
-│   └── withFmtConstevalFix.js   # Config plugin: fmt/Xcode build fix (see Troubleshooting)
-├── src/
-│   ├── config.js           # ← Backend API base URL lives here
-│   ├── models.js           # Transaction JSON → object helper
-│   ├── storage.js          # AsyncStorage wrapper (session, theme)
-│   ├── utils.js            # Formatting & icon helpers
-│   ├── voice.js            # Speech-recognition wrapper (degrades gracefully)
-│   ├── api/client.js       # All backend calls (axios)
-│   ├── theme/ThemeContext.jsx
-│   ├── components/         # Toast, SpendingPieChart, MonthlyBarChart
-│   └── screens/            # FirstPage, Login, Register, Home, AddTransaction,
-│                           #   AiAgent, AllTransactions, Account
-└── backend/                # Python / Flask API (unchanged by the migration)
+├── frontend/              # ← Flutter frontend (the app)
+│   ├── lib/
+│   │   ├── main.dart            # App entry, theme, named-route table
+│   │   ├── config.dart          # ← Backend API base URL lives here
+│   │   ├── models/transaction.dart
+│   │   ├── services/            # api.dart, storage.dart, voice.dart
+│   │   ├── theme/               # theme_provider.dart, app_colors.dart
+│   │   ├── utils.dart
+│   │   ├── widgets/             # toast, spending_pie_chart, monthly_bar_chart, auth_fields
+│   │   └── screens/             # FirstPage, Login, Register, Home, AddTransaction,
+│   │                            #   AiAgent, AllTransactions, Account
+│   ├── assets/                  # Images & app icon
+│   ├── android/  ios/           # Native projects (committed; hold permissions config)
+│   ├── pubspec.yaml
+│   └── README.md                # RN → Flutter file/package mapping
+│
+└── backend/                     # Python / Flask API (unchanged by the migration)
     ├── app.py
     ├── Schema.sql
     ├── requirements.txt
     └── .env.example
 ```
-
-> `ios/` and `android/` are **not** committed — they are generated by `expo prebuild`
-> and reproduced from `app.json` + the config plugin on any machine.
 
 ---
 
@@ -78,11 +74,10 @@ FinManager/
 
 ### Prerequisites
 
-- [Node.js](https://nodejs.org/) LTS (18+) and npm
+- [Flutter SDK](https://docs.flutter.dev/get-started/install) 3.10+ (Dart is bundled)
 - [Python](https://www.python.org/) 3.10+ and PostgreSQL
-- Expo CLI is used via `npx expo` (no global install needed)
-- **For native builds / voice:** Xcode (iOS) or Android Studio (Android).
-  Speech-to-text requires a **custom dev build** — it does not run in Expo Go.
+- **For device builds / voice:** Xcode (iOS) or Android Studio (Android).
+  Run `flutter doctor` to verify your toolchains.
 
 ### 1. Backend (Flask API)
 
@@ -105,39 +100,38 @@ pip install -r requirements.txt
 
   The server listens on `http://0.0.0.0:5001`.
 
-### 2. Frontend (React Native / Expo)
-
-From the **project root**:
+### 2. Frontend (Flutter)
 
 ```bash
-npm install
+cd frontend
+flutter pub get
 ```
 
-**Point the app at your backend** — edit `src/config.js`:
+**Point the app at your backend** — edit `lib/config.dart`:
 
-```js
+```dart
 // Use your machine's LAN IP (not 127.0.0.1) so a device/simulator can reach it.
-export const BASE_URL = 'http://192.168.1.10:5001';
+static const String baseUrl = 'http://192.168.1.10:5001';
 ```
 
 **Run it:**
 
 ```bash
-# Managed / quick (all features except voice; runs in Expo Go)
-npm start            # then press "i" (iOS) or "a" (Android)
-
-# Native dev build (required for speech-to-text)
-npx expo run:ios
-npx expo run:android
+flutter run            # pick a connected device or emulator
 ```
 
-The first native build runs `expo prebuild`, installs CocoaPods, and compiles —
-this takes a few minutes. Subsequent runs reuse the build; just `npm start`.
+Build release binaries with `flutter build apk` (Android) or `flutter build ios` (iOS).
 
 > **Cleartext HTTP:** the app targets an `http://` backend, and iOS/Android block
-> cleartext by default. `app.json` already includes the needed exceptions
-> (`NSAllowsArbitraryLoads` for iOS, `usesCleartextTraffic` for Android) so this
-> works in a dev build. For production, serve the backend over **HTTPS** instead.
+> cleartext by default. The needed exceptions are already configured
+> (`NSAllowsArbitraryLoads` in `ios/Runner/Info.plist`, `usesCleartextTraffic` in
+> `android/app/src/main/AndroidManifest.xml`). For production, serve the backend
+> over **HTTPS** instead.
+
+> **Voice permissions:** microphone + speech-recognition usage descriptions are set
+> in `ios/Runner/Info.plist`, and `RECORD_AUDIO` (plus recognition/TTS `<queries>`)
+> in the Android manifest. The mic button appears only when the device reports that
+> speech recognition is available.
 
 ---
 
@@ -155,20 +149,22 @@ this takes a few minutes. Subsequent runs reuse the build; just `npm start`.
 
 ## 🛠️ Troubleshooting
 
-**`fmt` build error on iOS (`consteval ... is not a constant expression`).**
-Xcode 16/26's Clang enforces C++20 `consteval` strictly, which the older `fmt`
-library pinned by React Native 0.76 violates. The bundled config plugin
-`plugins/withFmtConstevalFix.js` patches `fmt/base.h` (`FMT_USE_CONSTEVAL → 0`)
-during `pod install`, so `expo prebuild` / `expo run:ios` handle it automatically.
-If you ever regenerate native folders with `expo prebuild --clean`, the fix
-re-applies on its own.
+**`flutter pub get` fails / dependency version conflicts.**
+Ensure your Flutter SDK is 3.10+ (`flutter --version`). Run `flutter clean` then
+`flutter pub get` if a stale build is interfering.
 
 **AI agent import error (`No module named 'langchain_groq'`).**
 Make sure `langchain-groq` is installed (it's in `requirements.txt`); the agent in
 `app.py` uses Groq, not Google Gemini.
 
-**Voice mic button missing.** Expected in **Expo Go** — speech recognition is a
-native module. Use a dev build (`npx expo run:ios`) to enable it.
+**Voice mic button missing / no transcription.** The device or emulator must have a
+speech-recognition service available and the microphone permission granted. On a
+fresh iOS simulator, enable a keyboard/dictation locale; on Android, ensure a
+recognition service (e.g. Google) is present.
+
+**Can't reach the backend from a device.** Use your machine's LAN IP in
+`lib/config.dart` (not `127.0.0.1`/`localhost`), and make sure both are on the same
+network and the backend is bound to `0.0.0.0`.
 
 ---
 

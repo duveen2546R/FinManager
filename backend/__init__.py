@@ -1,0 +1,1 @@
+"""FinManager backend package."""
