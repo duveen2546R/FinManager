@@ -40,8 +40,10 @@ class _ImportReviewScreenState extends State<ImportReviewScreen> {
       final file = await openFile(acceptedTypeGroups: [typeGroup]);
       if (file == null) return;
       final bytes = await file.readAsBytes();
-      final rows = _parseCsv(utf8.decode(bytes));
+      
       setState(() => _loading = true);
+      final rows = await _parseCsv(utf8.decode(bytes));
+      
       final batch = await Api.createImport(
         source: 'CSVImport',
         filename: file.name,
@@ -109,7 +111,7 @@ class _ImportReviewScreenState extends State<ImportReviewScreen> {
   //  - type is inferred from a type column, debit/credit columns, or the sign;
   //  - category is mapped/clamped into the allowed set (else Others).
   // Anything missing is defaulted so the row still imports for review.
-  List<Map<String, dynamic>> _parseCsv(String text) {
+  Future<List<Map<String, dynamic>>> _parseCsv(String text) async {
     final normalized = text.replaceAll('\r\n', '\n').replaceAll('\r', '\n');
     final firstLine = normalized
         .split('\n')
@@ -130,7 +132,28 @@ class _ImportReviewScreenState extends State<ImportReviewScreen> {
       throw const FormatException('the file has a header but no data rows');
     }
 
-    final headers = rows.first.map((v) => _normHeader(v.toString())).toList();
+    int headerIndex = 0;
+    final maxCheck = rows.length > 20 ? 20 : rows.length;
+    for (var i = 0; i < maxCheck; i++) {
+      final h = rows[i].map((v) => _normHeader(v.toString())).toList();
+      final aCol = _col(h, ['amount', 'amt', 'value', 'transactionamount', 'price', 'total', 'money']);
+      final dCol = _col(h, ['debit', 'withdrawal', 'withdrawalamt', 'withdrawalamount', 'dr', 'debitamount', 'moneyout', 'paidout', 'outflow', 'spent']);
+      final cCol = _col(h, ['credit', 'deposit', 'depositamt', 'depositamount', 'cr', 'creditamount', 'moneyin', 'paidin', 'inflow', 'received']);
+      if (aCol >= 0 || dCol >= 0 || cCol >= 0) {
+        headerIndex = i;
+        break;
+      }
+    }
+    
+    final actualHeaderRow = rows[headerIndex].map((e) => e.toString()).toList();
+    if (actualHeaderRow.isNotEmpty) {
+      final isValid = await Api.validateCsvHeaders(actualHeaderRow);
+      if (!isValid) {
+        throw const FormatException('this CSV does not appear to be a valid financial statement.');
+      }
+    }
+
+    final headers = rows[headerIndex].map((v) => _normHeader(v.toString())).toList();
     final amountCol = _col(headers, [
       'amount',
       'amt',
@@ -227,7 +250,7 @@ class _ImportReviewScreenState extends State<ImportReviewScreen> {
         (i >= 0 && i < row.length) ? row[i].toString().trim() : '';
 
     final parsed = <Map<String, dynamic>>[];
-    for (final row in rows.skip(1)) {
+    for (final row in rows.skip(headerIndex + 1)) {
       if (row.every((v) => v.toString().trim().isEmpty)) continue;
 
       // Amount + direction.
@@ -567,10 +590,37 @@ class _ImportReviewScreenState extends State<ImportReviewScreen> {
       child: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.all(16),
-            child: Text(
-              'Select the rows to add. Duplicates are automatically excluded.',
-              style: TextStyle(color: colors.secondaryText),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Text(
+                    'Select the rows to add. Duplicates are automatically excluded.',
+                    style: TextStyle(color: colors.secondaryText),
+                  ),
+                ),
+                TextButton(
+                  onPressed: () {
+                    final selectableIds = batch.items
+                        .where((item) => item.status == 'pending')
+                        .map((item) => item.id)
+                        .toSet();
+                    setState(() {
+                      if (_selected.length == selectableIds.length && selectableIds.isNotEmpty) {
+                        _selected.clear();
+                      } else {
+                        _selected.addAll(selectableIds);
+                      }
+                    });
+                  },
+                  child: Text(
+                    _selected.length == batch.items.where((i) => i.status == 'pending').length && batch.items.where((i) => i.status == 'pending').isNotEmpty
+                        ? 'Deselect All'
+                        : 'Select All',
+                  ),
+                ),
+              ],
             ),
           ),
           Expanded(

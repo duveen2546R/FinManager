@@ -797,6 +797,48 @@ def create_import():
     return _response({"import": {"import_id": import_id, "source": source, "status": "review_required"}, "items": created_items}, 201)
 
 
+@app.post("/imports/validate_csv_headers")
+@_owner_required
+def validate_csv_headers():
+    payload = _request_json()
+    headers = payload.get("headers")
+    if not isinstance(headers, list):
+        raise ApiError("headers must be a list of strings.")
+
+    api_key = os.getenv("GROQ_API_KEY")
+    if not api_key:
+        return _response({"valid": True})
+
+    try:
+        from langchain_groq import ChatGroq
+        
+        prompt = f"""You are a data validation assistant for FinManager. The user is trying to upload a CSV file of financial transactions.
+        
+The headers of the CSV file are: {json.dumps(headers)}
+
+Determine if these headers look like a valid financial statement or expense tracker export. A valid statement typically contains columns for things like Date, Description/Narration/Title, and Amount (or Debit/Credit).
+
+Reply with ONLY a single JSON object (no markdown, nothing outside it):
+{{
+    "valid": true
+}}
+or false if it clearly has no relation to financial transactions.
+"""
+        raw = ChatGroq(
+            model_name=os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile"),
+            temperature=0.0,
+            groq_api_key=api_key,
+        ).invoke(prompt).content
+        
+        parsed = _parse_agent_json(raw)
+        is_valid = bool(parsed.get("valid", True)) if parsed else True
+    except Exception as e:
+        app.logger.warning(f"Groq CSV validation failed: {e}")
+        is_valid = True
+
+    return _response({"valid": is_valid})
+
+
 def _get_import(cursor: RealDictCursor, import_id: str, user_id: str) -> dict[str, Any]:
     cursor.execute("SELECT * FROM import_batches WHERE import_id = %s AND user_id = %s", (import_id, user_id))
     result = cursor.fetchone()

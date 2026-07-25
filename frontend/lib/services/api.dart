@@ -381,6 +381,19 @@ class Api {
     _fail(res, 'Failed to prepare import.');
   }
 
+  static Future<bool> validateCsvHeaders(List<String> headers) async {
+    final res = await _send(
+      'POST',
+      '${AppConfig.imports}/validate_csv_headers',
+      body: {'headers': headers},
+    );
+    final data = _decode(res);
+    if (res.statusCode == 200 && data['status'] == 'success') {
+      return data['valid'] == true;
+    }
+    return true; // Fallback to allow if API fails
+  }
+
   static Future<ImportBatch> getImport(String id) async {
     final res = await _send('GET', AppConfig.importDetail(id));
     final data = _decode(res);
