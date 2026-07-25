@@ -7,6 +7,7 @@ import '../services/api.dart';
 import '../theme/theme_provider.dart';
 import '../widgets/auth_fields.dart';
 import '../widgets/district/auth_header.dart';
+import '../widgets/district/auth_shell.dart';
 import '../widgets/district/motion.dart';
 import '../widgets/toast.dart';
 import 'home_screen.dart';
@@ -64,8 +65,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
         'password': _password.text,
       });
       if (!mounted) return;
-      showToast(context, 'Registration successful! Logging you in...',
-          variant: 'success');
+      showToast(
+        context,
+        'Registration successful! Logging you in...',
+        variant: 'success',
+      );
       Navigator.pushNamedAndRemoveUntil(
         context,
         HomeScreen.route,
@@ -80,8 +84,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
       if (mounted) showToast(context, e.message);
     } catch (_) {
       if (mounted) {
-        showToast(context,
-            'Could not connect to the server. Please check your network.');
+        showToast(
+          context,
+          'Could not connect to the server. Please check your network.',
+        );
       }
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -96,8 +102,17 @@ class _RegisterScreenState extends State<RegisterScreen> {
       backgroundColor: colors.background,
       appBar: AppBar(),
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+        child: AuthShell(
+          colors: colors,
+          headline: 'Start with\na clear picture.',
+          subline:
+              'Set up your account in a minute and see where your money '
+              'actually goes.',
+          points: const [
+            'Log income and expenses in seconds',
+            'Monthly stats, categories and trends',
+            'Import statements from a CSV file',
+          ],
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -118,9 +133,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   children: [
                     _label('Name', colors),
                     UnderlineField(
-                        controller: _name,
-                        hint: 'Your full name',
-                        colors: colors),
+                      controller: _name,
+                      hint: 'Your full name',
+                      colors: colors,
+                    ),
                     const SizedBox(height: 16),
                     _label('Phone number', colors),
                     UnderlineField(
@@ -144,8 +160,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       controller: _password,
                       visible: _passwordVisible,
                       colors: colors,
-                      onToggle: () => setState(
-                          () => _passwordVisible = !_passwordVisible),
+                      onToggle: () =>
+                          setState(() => _passwordVisible = !_passwordVisible),
                     ),
                   ],
                 ),
@@ -168,11 +184,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   Widget _label(String text, dynamic colors) => Padding(
-        padding: const EdgeInsets.only(bottom: 8),
-        child: Text(text,
-            style: TextStyle(
-                color: colors.text,
-                fontSize: 13.5,
-                fontWeight: FontWeight.w600)),
-      );
+    padding: const EdgeInsets.only(bottom: 8),
+    child: Text(
+      text,
+      style: TextStyle(
+        color: colors.text,
+        fontSize: 13.5,
+        fontWeight: FontWeight.w600,
+      ),
+    ),
+  );
 }

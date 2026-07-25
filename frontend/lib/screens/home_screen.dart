@@ -11,6 +11,7 @@ import '../theme/theme_provider.dart';
 import '../utils.dart';
 import '../widgets/auth_fields.dart';
 import '../widgets/district/bottom_nav.dart';
+import '../widgets/responsive.dart';
 import '../widgets/district/gradient_card.dart';
 import '../widgets/district/motion.dart';
 import '../widgets/district/shimmer.dart';
@@ -97,10 +98,13 @@ class _HomeScreenState extends State<HomeScreen> {
       }
     }
 
-    final oldest =
-        transactions.isNotEmpty ? transactions.last.date : DateTime.now();
-    final days =
-        (DateTime.now().difference(oldest).inDays + 1).clamp(1, 1 << 31);
+    final oldest = transactions.isNotEmpty
+        ? transactions.last.date
+        : DateTime.now();
+    final days = (DateTime.now().difference(oldest).inDays + 1).clamp(
+      1,
+      1 << 31,
+    );
 
     return _Stats(
       totalBalance: totalIncome - totalExpense,
@@ -163,8 +167,10 @@ class _HomeScreenState extends State<HomeScreen> {
       setState(() => _errorMessage = e.message);
     } catch (_) {
       if (!mounted) return;
-      setState(() => _errorMessage =
-          'Could not connect to the server. Check your network and IP address.');
+      setState(
+        () => _errorMessage =
+            'Could not connect to the server. Check your network and IP address.',
+      );
     }
   }
 
@@ -186,16 +192,21 @@ class _HomeScreenState extends State<HomeScreen> {
         _openAi();
         break;
       case 3:
-        Navigator.pushNamed(context, AccountScreen.route,
-            arguments:
-                AccountArgs(userName: _userName, userEmail: _userEmail));
+        Navigator.pushNamed(
+          context,
+          AccountScreen.route,
+          arguments: AccountArgs(userName: _userName, userEmail: _userEmail),
+        );
         break;
     }
   }
 
   Future<void> _openActivity() async {
-    await Navigator.pushNamed(context, AllTransactionsScreen.route,
-        arguments: AllTransactionsArgs(transactions: _transactions));
+    await Navigator.pushNamed(
+      context,
+      AllTransactionsScreen.route,
+      arguments: AllTransactionsArgs(transactions: _transactions),
+    );
     _fetchData(); // transactions may have been deleted there
   }
 
@@ -214,6 +225,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void _openQuickActions(AppColors colors) {
     showModalBottomSheet(
       context: context,
+      constraints: sheetConstraints(context),
       backgroundColor: colors.card,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
@@ -236,12 +248,15 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
               const SizedBox(height: 18),
-              Text('Quick actions',
-                  style: TextStyle(
-                      color: colors.text,
-                      fontSize: 20,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: -0.3)),
+              Text(
+                'Quick actions',
+                style: TextStyle(
+                  color: colors.text,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: -0.3,
+                ),
+              ),
               const SizedBox(height: 16),
               _actionTile(
                 colors,
@@ -251,7 +266,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 () async {
                   Navigator.pop(sheetContext);
                   await Navigator.pushNamed(
-                      context, AddTransactionScreen.route);
+                    context,
+                    AddTransactionScreen.route,
+                  );
                   _fetchData();
                 },
               ),
@@ -283,8 +300,13 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _actionTile(AppColors colors, IconData icon, String title,
-      String subtitle, VoidCallback onTap) {
+  Widget _actionTile(
+    AppColors colors,
+    IconData icon,
+    String title,
+    String subtitle,
+    VoidCallback onTap,
+  ) {
     return PressableScale(
       onTap: onTap,
       child: Container(
@@ -299,8 +321,10 @@ class _HomeScreenState extends State<HomeScreen> {
             Container(
               width: 48,
               height: 48,
-              decoration:
-                  BoxDecoration(color: colors.card, shape: BoxShape.circle),
+              decoration: BoxDecoration(
+                color: colors.card,
+                shape: BoxShape.circle,
+              ),
               child: Icon(icon, size: 22, color: colors.text),
             ),
             const SizedBox(width: 14),
@@ -308,20 +332,27 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title,
-                      style: TextStyle(
-                          color: colors.text,
-                          fontSize: 15.5,
-                          fontWeight: FontWeight.w700)),
+                  Text(
+                    title,
+                    style: TextStyle(
+                      color: colors.text,
+                      fontSize: 15.5,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
                   const SizedBox(height: 2),
-                  Text(subtitle,
-                      style: TextStyle(
-                          color: colors.secondaryText, fontSize: 13)),
+                  Text(
+                    subtitle,
+                    style: TextStyle(color: colors.secondaryText, fontSize: 13),
+                  ),
                 ],
               ),
             ),
-            Icon(Ionicons.chevron_forward,
-                size: 18, color: colors.secondaryText),
+            Icon(
+              Ionicons.chevron_forward,
+              size: 18,
+              color: colors.secondaryText,
+            ),
           ],
         ),
       ),
@@ -346,8 +377,8 @@ class _HomeScreenState extends State<HomeScreen> {
         child: _loading
             ? _SkeletonDashboard(colors: colors)
             : _errorMessage != null
-                ? _errorView(colors)
-                : _dashboard(colors),
+            ? _errorView(colors)
+            : _dashboard(colors),
       ),
     );
   }
@@ -359,12 +390,17 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Ionicons.cloud_offline_outline,
-                size: 56, color: colors.secondaryText),
+            Icon(
+              Ionicons.cloud_offline_outline,
+              size: 56,
+              color: colors.secondaryText,
+            ),
             const SizedBox(height: 16),
-            Text(_errorMessage!,
-                textAlign: TextAlign.center,
-                style: TextStyle(color: colors.text, fontSize: 16)),
+            Text(
+              _errorMessage!,
+              textAlign: TextAlign.center,
+              style: TextStyle(color: colors.text, fontSize: 16),
+            ),
             const SizedBox(height: 24),
             SizedBox(
               width: 160,
@@ -381,14 +417,112 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _dashboard(AppColors colors) {
+  // Laptop layout: the same sections, re-flowed into a full-width dashboard
+  // grid instead of one tall column.
+  Widget _wideDashboard(AppColors colors) {
+    final padX = context.pagePadX;
+    final insightCards = <Widget>[
+      if (_guidance != null) _guidanceCard(colors, _guidance!),
+      for (final insight in _insights.take(3))
+        _InsightCard(
+          insight: insight,
+          colors: colors,
+          onFeedback: (feedback) => _sendFeedback(insight, feedback),
+        ),
+    ];
+
     return RefreshIndicator(
       color: colors.text,
       backgroundColor: colors.card,
       onRefresh: _fetchData,
       child: ListView(
         physics: const BouncingScrollPhysics(
-            parent: AlwaysScrollableScrollPhysics()),
+          parent: AlwaysScrollableScrollPhysics(),
+        ),
+        padding: EdgeInsets.fromLTRB(padX, 16, padX, 120),
+        children: [
+          EntranceFade(child: _header(colors)),
+          const SizedBox(height: 26),
+          // Balance hero beside the four stat tiles as a 2x2 grid.
+          EntranceFade(
+            delay: const Duration(milliseconds: 60),
+            child: ResponsiveRow(
+              flex: const [4, 6],
+              children: [
+                _balanceCard(colors),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _sectionHeader(colors, 'Your stats'),
+                    const SizedBox(height: 12),
+                    ResponsiveTileGrid(
+                      columns: 2,
+                      gap: 14,
+                      children: _statCards(colors, expand: true),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 28),
+          EntranceFade(
+            delay: const Duration(milliseconds: 140),
+            child: ResponsiveRow(
+              children: [
+                _chartCard(
+                  colors,
+                  title: 'Expense breakdown',
+                  icon: Ionicons.pie_chart_outline,
+                  child: SpendingPieChart(
+                    spendingByCategory: _stats.spendingByCategory,
+                    colors: colors,
+                  ),
+                ),
+                _chartCard(
+                  colors,
+                  title: 'Monthly spending',
+                  icon: Ionicons.bar_chart_outline,
+                  child: MonthlyBarChart(
+                    transactions: _transactions,
+                    colors: colors,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (insightCards.isNotEmpty) ...[
+            const SizedBox(height: 28),
+            EntranceFade(
+              delay: const Duration(milliseconds: 180),
+              child: _sectionHeader(colors, 'Insights'),
+            ),
+            const SizedBox(height: 12),
+            EntranceFade(
+              delay: const Duration(milliseconds: 200),
+              child: ResponsiveTileGrid(columns: 3, children: insightCards),
+            ),
+          ],
+          const SizedBox(height: 28),
+          EntranceFade(
+            delay: const Duration(milliseconds: 240),
+            child: _transactionsCard(colors),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _dashboard(AppColors colors) {
+    if (context.isWide) return _wideDashboard(colors);
+    return RefreshIndicator(
+      color: colors.text,
+      backgroundColor: colors.card,
+      onRefresh: _fetchData,
+      child: ListView(
+        physics: const BouncingScrollPhysics(
+          parent: AlwaysScrollableScrollPhysics(),
+        ),
         padding: const EdgeInsets.fromLTRB(20, 12, 20, 120),
         children: [
           EntranceFade(child: _header(colors)),
@@ -451,8 +585,10 @@ class _HomeScreenState extends State<HomeScreen> {
               colors,
               title: 'Monthly spending',
               icon: Ionicons.bar_chart_outline,
-              child:
-                  MonthlyBarChart(transactions: _transactions, colors: colors),
+              child: MonthlyBarChart(
+                transactions: _transactions,
+                colors: colors,
+              ),
             ),
           ),
           const SizedBox(height: 26),
@@ -474,18 +610,22 @@ class _HomeScreenState extends State<HomeScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('$_greeting, ${_userName.split(' ').first}',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                      color: colors.text,
-                      fontSize: 24,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: -0.4)),
+              Text(
+                '$_greeting, ${_userName.split(' ').first}',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: colors.text,
+                  fontSize: 24,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: -0.4,
+                ),
+              ),
               const SizedBox(height: 3),
-              Text('Welcome to FinManager',
-                  style:
-                      TextStyle(color: colors.secondaryText, fontSize: 14)),
+              Text(
+                'Welcome to FinManager',
+                style: TextStyle(color: colors.secondaryText, fontSize: 14),
+              ),
             ],
           ),
         ),
@@ -493,8 +633,7 @@ class _HomeScreenState extends State<HomeScreen> {
           onTap: () => Navigator.pushNamed(
             context,
             AccountScreen.route,
-            arguments:
-                AccountArgs(userName: _userName, userEmail: _userEmail),
+            arguments: AccountArgs(userName: _userName, userEmail: _userEmail),
           ),
           child: Container(
             width: 48,
@@ -505,11 +644,14 @@ class _HomeScreenState extends State<HomeScreen> {
               border: Border.all(color: colors.accent, width: 2.5),
             ),
             alignment: Alignment.center,
-            child: Text(initial,
-                style: TextStyle(
-                    color: colors.text,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w800)),
+            child: Text(
+              initial,
+              style: TextStyle(
+                color: colors.text,
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
           ),
         ),
       ],
@@ -540,26 +682,32 @@ class _HomeScreenState extends State<HomeScreen> {
             children: [
               Row(
                 children: [
-                  Icon(Ionicons.wallet_outline,
-                      size: 16, color: Colors.white.withValues(alpha: 0.55)),
+                  Icon(
+                    Ionicons.wallet_outline,
+                    size: 16,
+                    color: Colors.white.withValues(alpha: 0.55),
+                  ),
                   const SizedBox(width: 8),
-                  Text('Total balance',
-                      style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.6),
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500)),
+                  Text(
+                    'Total balance',
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.6),
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
                 ],
               ),
               GestureDetector(
-                onTap: () =>
-                    setState(() => _balanceHidden = !_balanceHidden),
+                onTap: () => setState(() => _balanceHidden = !_balanceHidden),
                 behavior: HitTestBehavior.opaque,
                 child: Icon(
-                    _balanceHidden
-                        ? Ionicons.eye_off_outline
-                        : Ionicons.eye_outline,
-                    size: 20,
-                    color: Colors.white.withValues(alpha: 0.55)),
+                  _balanceHidden
+                      ? Ionicons.eye_off_outline
+                      : Ionicons.eye_outline,
+                  size: 20,
+                  color: Colors.white.withValues(alpha: 0.55),
+                ),
               ),
             ],
           ),
@@ -568,14 +716,16 @@ class _HomeScreenState extends State<HomeScreen> {
             fit: BoxFit.scaleDown,
             alignment: Alignment.centerLeft,
             child: Text(
-                _balanceHidden
-                    ? '\u{20B9} ••••••'
-                    : formatRupee(_stats.totalBalance),
-                style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 44,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: -1.5)),
+              _balanceHidden
+                  ? '\u{20B9} ••••••'
+                  : formatRupee(_stats.totalBalance),
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 44,
+                fontWeight: FontWeight.w800,
+                letterSpacing: -1.5,
+              ),
+            ),
           ),
           const SizedBox(height: 22),
           PressableScale(
@@ -592,11 +742,14 @@ class _HomeScreenState extends State<HomeScreen> {
                 children: [
                   Icon(Ionicons.add, size: 22, color: colors.onAccent),
                   const SizedBox(width: 8),
-                  Text('Add money',
-                      style: TextStyle(
-                          color: colors.onAccent,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700)),
+                  Text(
+                    'Add money',
+                    style: TextStyle(
+                      color: colors.onAccent,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -606,51 +759,61 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  // The four stat cards, shared by the phone rail and the desktop grid.
+  List<Widget> _statCards(AppColors colors, {bool expand = false}) => [
+    _StatCard(
+      label: 'Income',
+      value: formatRupee(_stats.totalIncome),
+      icon: Ionicons.trending_up,
+      bg: colors.accent,
+      fg: colors.onAccent,
+      expand: expand,
+    ),
+    _StatCard(
+      label: 'Expense',
+      value: formatRupee(_stats.totalExpense),
+      icon: Ionicons.trending_down,
+      bg: const Color(0xFF1A1A1A),
+      fg: Colors.white,
+      expand: expand,
+    ),
+    _StatCard(
+      label: 'Daily avg',
+      value: formatRupee(_stats.dailyAverage),
+      icon: Ionicons.pulse_outline,
+      bg: colors.card,
+      fg: colors.text,
+      subFg: colors.secondaryText,
+      badgeColor: colors.elevated,
+      borderColor: colors.border,
+      expand: expand,
+    ),
+    _StatCard(
+      label: 'Highest',
+      value: formatRupee(_stats.highestSpend),
+      icon: Ionicons.flame_outline,
+      bg: colors.card,
+      fg: colors.text,
+      subFg: colors.secondaryText,
+      badgeColor: colors.elevated,
+      borderColor: colors.border,
+      expand: expand,
+    ),
+  ];
+
   // ---- Stats rail: lime + black + white cards ----
   Widget _statsRail(AppColors colors) {
+    final cards = _statCards(colors);
     return SizedBox(
       height: 158,
       child: ListView(
         scrollDirection: Axis.horizontal,
         physics: const BouncingScrollPhysics(),
         children: [
-          _StatCard(
-            label: 'Income',
-            value: formatRupee(_stats.totalIncome),
-            icon: Ionicons.trending_up,
-            bg: colors.accent,
-            fg: colors.onAccent,
-          ),
-          const SizedBox(width: 14),
-          _StatCard(
-            label: 'Expense',
-            value: formatRupee(_stats.totalExpense),
-            icon: Ionicons.trending_down,
-            bg: const Color(0xFF1A1A1A),
-            fg: Colors.white,
-          ),
-          const SizedBox(width: 14),
-          _StatCard(
-            label: 'Daily avg',
-            value: formatRupee(_stats.dailyAverage),
-            icon: Ionicons.pulse_outline,
-            bg: colors.card,
-            fg: colors.text,
-            subFg: colors.secondaryText,
-            badgeColor: colors.elevated,
-            borderColor: colors.border,
-          ),
-          const SizedBox(width: 14),
-          _StatCard(
-            label: 'Highest',
-            value: formatRupee(_stats.highestSpend),
-            icon: Ionicons.flame_outline,
-            bg: colors.card,
-            fg: colors.text,
-            subFg: colors.secondaryText,
-            badgeColor: colors.elevated,
-            borderColor: colors.border,
-          ),
+          for (var i = 0; i < cards.length; i++) ...[
+            if (i > 0) const SizedBox(width: 14),
+            cards[i],
+          ],
         ],
       ),
     );
@@ -678,24 +841,33 @@ class _HomeScreenState extends State<HomeScreen> {
               color: colors.onAccent.withValues(alpha: 0.10),
               shape: BoxShape.circle,
             ),
-            child: Icon(Ionicons.compass_outline,
-                size: 22, color: colors.onAccent),
+            child: Icon(
+              Ionicons.compass_outline,
+              size: 22,
+              color: colors.onAccent,
+            ),
           ),
           const SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Safe to spend this week',
-                    style: TextStyle(
-                        color: colors.onAccent.withValues(alpha: 0.75),
-                        fontSize: 12.5)),
+                Text(
+                  'Safe to spend this week',
+                  style: TextStyle(
+                    color: colors.onAccent.withValues(alpha: 0.75),
+                    fontSize: 12.5,
+                  ),
+                ),
                 const SizedBox(height: 2),
-                Text(formatRupee(g.recommendedWeeklyLimit),
-                    style: TextStyle(
-                        color: colors.onAccent,
-                        fontSize: 22,
-                        fontWeight: FontWeight.w800)),
+                Text(
+                  formatRupee(g.recommendedWeeklyLimit),
+                  style: TextStyle(
+                    color: colors.onAccent,
+                    fontSize: 22,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
               ],
             ),
           ),
@@ -704,30 +876,44 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _sectionHeader(AppColors colors, String title, {VoidCallback? onSeeAll}) {
+  Widget _sectionHeader(
+    AppColors colors,
+    String title, {
+    VoidCallback? onSeeAll,
+  }) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(title,
-            style: TextStyle(
-                color: colors.text,
-                fontSize: 19,
-                fontWeight: FontWeight.w800,
-                letterSpacing: -0.3)),
+        Text(
+          title,
+          style: TextStyle(
+            color: colors.text,
+            fontSize: 19,
+            fontWeight: FontWeight.w800,
+            letterSpacing: -0.3,
+          ),
+        ),
         if (onSeeAll != null)
           PressableScale(
             onTap: onSeeAll,
-            child: Text('See all',
-                style: TextStyle(
-                    color: colors.secondaryText,
-                    fontWeight: FontWeight.w600)),
+            child: Text(
+              'See all',
+              style: TextStyle(
+                color: colors.secondaryText,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ),
       ],
     );
   }
 
-  Widget _chartCard(AppColors colors,
-      {required String title, required IconData icon, required Widget child}) {
+  Widget _chartCard(
+    AppColors colors, {
+    required String title,
+    required IconData icon,
+    required Widget child,
+  }) {
     return SurfaceCard(
       color: colors.card,
       padding: const EdgeInsets.all(22),
@@ -740,16 +926,21 @@ class _HomeScreenState extends State<HomeScreen> {
                 width: 42,
                 height: 42,
                 decoration: BoxDecoration(
-                    color: colors.elevated, shape: BoxShape.circle),
+                  color: colors.elevated,
+                  shape: BoxShape.circle,
+                ),
                 child: Icon(icon, size: 20, color: colors.text),
               ),
               const SizedBox(width: 12),
-              Text(title,
-                  style: TextStyle(
-                      color: colors.text,
-                      fontSize: 18,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: -0.3)),
+              Text(
+                title,
+                style: TextStyle(
+                  color: colors.text,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: -0.3,
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 22),
@@ -770,21 +961,27 @@ class _HomeScreenState extends State<HomeScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Transactions',
-                  style: TextStyle(
-                      color: colors.text,
-                      fontSize: 17,
-                      fontWeight: FontWeight.w800)),
+              Text(
+                'Transactions',
+                style: TextStyle(
+                  color: colors.text,
+                  fontSize: 17,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
               PressableScale(
                 onTap: () => Navigator.pushNamed(
                   context,
                   AllTransactionsScreen.route,
                   arguments: AllTransactionsArgs(transactions: _transactions),
                 ),
-                child: Text('See all',
-                    style: TextStyle(
-                        color: colors.secondaryText,
-                        fontWeight: FontWeight.w600)),
+                child: Text(
+                  'See all',
+                  style: TextStyle(
+                    color: colors.secondaryText,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
               ),
             ],
           ),
@@ -793,8 +990,10 @@ class _HomeScreenState extends State<HomeScreen> {
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 24),
               child: Center(
-                child: Text('No transactions recorded yet.',
-                    style: TextStyle(color: colors.secondaryText)),
+                child: Text(
+                  'No transactions recorded yet.',
+                  style: TextStyle(color: colors.secondaryText),
+                ),
               ),
             )
           else
@@ -856,17 +1055,23 @@ class _InsightCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(insight.title,
-                        style: TextStyle(
-                            color: colors.text,
-                            fontSize: 15,
-                            fontWeight: FontWeight.w700)),
+                    Text(
+                      insight.title,
+                      style: TextStyle(
+                        color: colors.text,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
                     const SizedBox(height: 4),
-                    Text(insight.message,
-                        style: TextStyle(
-                            color: colors.secondaryText,
-                            fontSize: 13.5,
-                            height: 1.4)),
+                    Text(
+                      insight.message,
+                      style: TextStyle(
+                        color: colors.secondaryText,
+                        fontSize: 13.5,
+                        height: 1.4,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -875,14 +1080,23 @@ class _InsightCard extends StatelessWidget {
           const SizedBox(height: 12),
           Row(
             children: [
-              _chip('Helpful', Ionicons.thumbs_up_outline,
-                  () => onFeedback('helpful')),
+              _chip(
+                'Helpful',
+                Ionicons.thumbs_up_outline,
+                () => onFeedback('helpful'),
+              ),
               const SizedBox(width: 8),
-              _chip('Not right', Ionicons.thumbs_down_outline,
-                  () => onFeedback('incorrect')),
+              _chip(
+                'Not right',
+                Ionicons.thumbs_down_outline,
+                () => onFeedback('incorrect'),
+              ),
               const SizedBox(width: 8),
-              _chip('Dismiss', Ionicons.close_outline,
-                  () => onFeedback('ignored')),
+              _chip(
+                'Dismiss',
+                Ionicons.close_outline,
+                () => onFeedback('ignored'),
+              ),
             ],
           ),
         ],
@@ -903,11 +1117,14 @@ class _InsightCard extends StatelessWidget {
           children: [
             Icon(icon, size: 14, color: colors.text),
             const SizedBox(width: 5),
-            Text(label,
-                style: TextStyle(
-                    color: colors.text,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600)),
+            Text(
+              label,
+              style: TextStyle(
+                color: colors.text,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ],
         ),
       ),
@@ -926,6 +1143,9 @@ class _StatCard extends StatelessWidget {
   // Theme-aware badge/border for surface cards; null → derive from fg.
   final Color? badgeColor;
   final Color? borderColor;
+  // Fills its parent's width (used inside the wide-screen stats grid) instead
+  // of the fixed width the horizontal rail needs.
+  final bool expand;
   const _StatCard({
     required this.label,
     required this.value,
@@ -935,6 +1155,7 @@ class _StatCard extends StatelessWidget {
     this.subFg,
     this.badgeColor,
     this.borderColor,
+    this.expand = false,
   });
 
   @override
@@ -944,13 +1165,13 @@ class _StatCard extends StatelessWidget {
     // in both light and dark mode.
     final badgeBg = badgeColor ?? fg.withValues(alpha: 0.14);
     return Container(
-      width: 172,
+      width: expand ? null : 172,
+      height: expand ? 158 : null,
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: bg,
         borderRadius: BorderRadius.circular(26),
-        border:
-            borderColor != null ? Border.all(color: borderColor!) : null,
+        border: borderColor != null ? Border.all(color: borderColor!) : null,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -968,21 +1189,28 @@ class _StatCard extends StatelessWidget {
               FittedBox(
                 fit: BoxFit.scaleDown,
                 alignment: Alignment.centerLeft,
-                child: Text(value,
-                    maxLines: 1,
-                    style: TextStyle(
-                        color: fg,
-                        fontSize: 24,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: -0.5)),
+                child: Text(
+                  value,
+                  maxLines: 1,
+                  style: TextStyle(
+                    color: fg,
+                    fontSize: 24,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.5,
+                  ),
+                ),
               ),
               const SizedBox(height: 3),
-              Text(label,
-                  style: TextStyle(
-                      color: (subFg ?? fg)
-                          .withValues(alpha: subFg == null ? 0.72 : 1),
-                      fontSize: 13,
-                      fontWeight: FontWeight.w500)),
+              Text(
+                label,
+                style: TextStyle(
+                  color: (subFg ?? fg).withValues(
+                    alpha: subFg == null ? 0.72 : 1,
+                  ),
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
             ],
           ),
         ],
@@ -1011,47 +1239,59 @@ class _TxnRow extends StatelessWidget {
               color: colors.elevated,
               shape: BoxShape.circle,
             ),
-            child: Icon(iconForCategory(txn.category),
-                size: 20, color: colors.text),
+            child: Icon(
+              iconForCategory(txn.category),
+              size: 20,
+              color: colors.text,
+            ),
           ),
           const SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(txn.title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                        color: colors.text,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 15)),
+                Text(
+                  txn.title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: colors.text,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 15,
+                  ),
+                ),
                 const SizedBox(height: 2),
-                Text(formatShortDate(txn.date),
-                    style: TextStyle(
-                        color: colors.secondaryText, fontSize: 12.5)),
+                Text(
+                  formatShortDate(txn.date),
+                  style: TextStyle(color: colors.secondaryText, fontSize: 12.5),
+                ),
               ],
             ),
           ),
           if (isExpense)
-            Text('-${formatRupee(txn.amount)}',
-                style: TextStyle(
-                    color: colors.text,
-                    fontWeight: FontWeight.w800,
-                    fontSize: 15))
+            Text(
+              '-${formatRupee(txn.amount)}',
+              style: TextStyle(
+                color: colors.text,
+                fontWeight: FontWeight.w800,
+                fontSize: 15,
+              ),
+            )
           else
             Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
               decoration: BoxDecoration(
                 color: colors.accent,
                 borderRadius: BorderRadius.circular(100),
               ),
-              child: Text('+${formatRupee(txn.amount)}',
-                  style: TextStyle(
-                      color: colors.onAccent,
-                      fontWeight: FontWeight.w800,
-                      fontSize: 13)),
+              child: Text(
+                '+${formatRupee(txn.amount)}',
+                style: TextStyle(
+                  color: colors.onAccent,
+                  fontWeight: FontWeight.w800,
+                  fontSize: 13,
+                ),
+              ),
             ),
         ],
       ),
@@ -1070,7 +1310,12 @@ class _SkeletonDashboard extends StatelessWidget {
       colors: colors,
       child: ListView(
         physics: const NeverScrollableScrollPhysics(),
-        padding: const EdgeInsets.fromLTRB(20, 12, 20, 120),
+        padding: EdgeInsets.fromLTRB(
+          context.pagePadX,
+          12,
+          context.pagePadX,
+          120,
+        ),
         children: [
           Row(
             children: [
@@ -1100,7 +1345,11 @@ class _SkeletonDashboard extends StatelessWidget {
               itemCount: 4,
               separatorBuilder: (_, _) => const SizedBox(width: 14),
               itemBuilder: (_, _) => SkeletonBox(
-                  width: 172, height: 158, radius: 26, colors: colors),
+                width: 172,
+                height: 158,
+                radius: 26,
+                colors: colors,
+              ),
             ),
           ),
           const SizedBox(height: 26),

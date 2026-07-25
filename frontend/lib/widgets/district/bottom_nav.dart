@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:ionicons/ionicons.dart';
 import '../../theme/app_colors.dart';
+import '../responsive.dart';
 import 'motion.dart';
 
 class NavItem {
@@ -35,9 +36,7 @@ class DistrictBottomNav extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      top: false,
-      child: Container(
+    final bar = Container(
         height: 68,
         margin: const EdgeInsets.fromLTRB(16, 0, 16, 10),
         decoration: BoxDecoration(
@@ -60,7 +59,20 @@ class DistrictBottomNav extends StatelessWidget {
             _tab(3),
           ],
         ),
-      ),
+      );
+
+    return SafeArea(
+      top: false,
+      // Stretched across a laptop window the tabs would drift metres apart, so
+      // the bar stays a centred floating pill over the full-width page.
+      child: context.isWide
+          ? Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 620),
+                child: bar,
+              ),
+            )
+          : bar,
     );
   }
 

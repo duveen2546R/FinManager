@@ -9,6 +9,7 @@ import '../services/api.dart';
 import '../theme/app_colors.dart';
 import '../theme/theme_provider.dart';
 import '../widgets/district/gradient_card.dart';
+import '../widgets/responsive.dart';
 import '../widgets/district/motion.dart';
 import '../widgets/toast.dart';
 import 'first_page_screen.dart';
@@ -33,164 +34,208 @@ class AccountScreen extends StatelessWidget {
     final userName = args.userName ?? '';
     final userEmail = args.userEmail ?? '';
 
+    final identity = _identity(colors, userName);
+    final personalInfo = _personalInfo(colors, userName, userEmail);
+    final settings = _settings(context, theme, colors);
+    final dangerZone = _dangerZone(context, colors);
+
     return Scaffold(
       appBar: AppBar(title: const Text('Profile')),
       backgroundColor: colors.background,
-      body: ListView(
-        padding: const EdgeInsets.all(20),
-        children: [
-          // Avatar
-          EntranceFade(
-            child: Center(
-              child: Container(
-                width: 104,
-                height: 104,
-                decoration: BoxDecoration(
-                  color: colors.accent,
-                  shape: BoxShape.circle,
+      // Laptop: identity + personal info on the left, settings and the danger
+      // zone on the right, across the full window width.
+      body: context.isWide
+          ? ListView(
+              padding: EdgeInsets.fromLTRB(
+                context.pagePadX,
+                24,
+                context.pagePadX,
+                40,
+              ),
+              children: [
+                ResponsiveRow(
+                  gap: 24,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        identity,
+                        const SizedBox(height: 24),
+                        personalInfo,
+                      ],
+                    ),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        settings,
+                        const SizedBox(height: 16),
+                        dangerZone,
+                      ],
+                    ),
+                  ],
                 ),
-                alignment: Alignment.center,
-                child: Text(
-                  userName.isNotEmpty ? userName[0].toUpperCase() : 'U',
-                  style: TextStyle(
-                    fontSize: 42,
-                    fontWeight: FontWeight.w800,
-                    color: colors.onAccent,
-                  ),
+              ],
+            )
+          : ListView(
+              padding: const EdgeInsets.all(20),
+              children: [
+                identity,
+                const SizedBox(height: 24),
+                personalInfo,
+                const SizedBox(height: 16),
+                settings,
+                const SizedBox(height: 16),
+                dangerZone,
+              ],
+            ),
+    );
+  }
+
+  // Lime avatar + name.
+  Widget _identity(AppColors colors, String userName) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        EntranceFade(
+          child: Center(
+            child: Container(
+              width: 104,
+              height: 104,
+              decoration: BoxDecoration(
+                color: colors.accent,
+                shape: BoxShape.circle,
+              ),
+              alignment: Alignment.center,
+              child: Text(
+                userName.isNotEmpty ? userName[0].toUpperCase() : 'U',
+                style: TextStyle(
+                  fontSize: 42,
+                  fontWeight: FontWeight.w800,
+                  color: colors.onAccent,
                 ),
               ),
             ),
           ),
-          const SizedBox(height: 12),
-          EntranceFade(
-            delay: const Duration(milliseconds: 60),
-            child: Text(
-              userName,
-              textAlign: TextAlign.center,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
+        ),
+        const SizedBox(height: 12),
+        EntranceFade(
+          delay: const Duration(milliseconds: 60),
+          child: Text(
+            userName,
+            textAlign: TextAlign.center,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.w800,
+              color: colors.text,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _personalInfo(AppColors colors, String userName, String userEmail) {
+    return EntranceFade(
+      delay: const Duration(milliseconds: 120),
+      child: SurfaceCard(
+        color: colors.card,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Personal info',
               style: TextStyle(
-                fontSize: 22,
+                fontSize: 17,
                 fontWeight: FontWeight.w800,
                 color: colors.text,
               ),
             ),
-          ),
-          const SizedBox(height: 24),
-
-          // Personal info
-          EntranceFade(
-            delay: const Duration(milliseconds: 120),
-            child: SurfaceCard(
-              color: colors.card,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Personal info',
-                    style: TextStyle(
-                      fontSize: 17,
-                      fontWeight: FontWeight.w800,
-                      color: colors.text,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  _InfoRow(
-                    icon: Ionicons.person_outline,
-                    label: 'Name',
-                    value: userName,
-                    colors: colors,
-                  ),
-                  const SizedBox(height: 16),
-                  _InfoRow(
-                    icon: Ionicons.mail_outline,
-                    label: 'E-mail',
-                    value: userEmail,
-                    colors: colors,
-                  ),
-                ],
-              ),
+            const SizedBox(height: 16),
+            _InfoRow(
+              icon: Ionicons.person_outline,
+              label: 'Name',
+              value: userName,
+              colors: colors,
             ),
-          ),
-          const SizedBox(height: 16),
-
-          // Settings
-          EntranceFade(
-            delay: const Duration(milliseconds: 180),
-            child: SurfaceCard(
-              color: colors.card,
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-              child: Column(
-                children: [
-                  _MenuTile(
-                    icon: Ionicons.color_palette_outline,
-                    title: 'Theme',
-                    colors: colors,
-                    onTap: () => _showThemeDialog(context, theme, colors),
-                  ),
-                  Divider(
-                    height: 1,
-                    indent: 60,
-                    endIndent: 12,
-                    color: colors.border,
-                  ),
-                  _MenuTile(
-                    icon: Ionicons.help_circle_outline,
-                    title: 'Help & Support',
-                    colors: colors,
-                    onTap: () {},
-                  ),
-                ],
-              ),
+            const SizedBox(height: 16),
+            _InfoRow(
+              icon: Ionicons.mail_outline,
+              label: 'E-mail',
+              value: userEmail,
+              colors: colors,
             ),
-          ),
-          const SizedBox(height: 16),
+          ],
+        ),
+      ),
+    );
+  }
 
-          // Logout + danger zone
-          EntranceFade(
-            delay: const Duration(milliseconds: 240),
-            child: SurfaceCard(
-              color: colors.card,
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-              child: Column(
-                children: [
-                  _MenuTile(
-                    icon: Ionicons.log_out_outline,
-                    title: 'Logout',
-                    color: colors.expense,
-                    colors: colors,
-                    onTap: () => _confirmLogout(context),
-                  ),
-                  Divider(
-                    height: 1,
-                    indent: 60,
-                    endIndent: 12,
-                    color: colors.border,
-                  ),
-                  _MenuTile(
-                    icon: Ionicons.download_outline,
-                    title: 'Copy my data export',
-                    colors: colors,
-                    onTap: () => _copyExport(context),
-                  ),
-                  Divider(
-                    height: 1,
-                    indent: 60,
-                    endIndent: 12,
-                    color: colors.border,
-                  ),
-                  _MenuTile(
-                    icon: Ionicons.trash_outline,
-                    title: 'Delete account',
-                    color: colors.expense,
-                    colors: colors,
-                    onTap: () => _confirmDeleteAccount(context),
-                  ),
-                ],
-              ),
+  Widget _settings(
+    BuildContext context,
+    ThemeProvider theme,
+    AppColors colors,
+  ) {
+    return EntranceFade(
+      delay: const Duration(milliseconds: 180),
+      child: SurfaceCard(
+        color: colors.card,
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+        child: Column(
+          children: [
+            _MenuTile(
+              icon: Ionicons.color_palette_outline,
+              title: 'Theme',
+              colors: colors,
+              onTap: () => _showThemeDialog(context, theme, colors),
             ),
-          ),
-        ],
+            Divider(height: 1, indent: 60, endIndent: 12, color: colors.border),
+            _MenuTile(
+              icon: Ionicons.help_circle_outline,
+              title: 'Help & Support',
+              colors: colors,
+              onTap: () {},
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Logout + danger zone.
+  Widget _dangerZone(BuildContext context, AppColors colors) {
+    return EntranceFade(
+      delay: const Duration(milliseconds: 240),
+      child: SurfaceCard(
+        color: colors.card,
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+        child: Column(
+          children: [
+            _MenuTile(
+              icon: Ionicons.log_out_outline,
+              title: 'Logout',
+              color: colors.expense,
+              colors: colors,
+              onTap: () => _confirmLogout(context),
+            ),
+            Divider(height: 1, indent: 60, endIndent: 12, color: colors.border),
+            _MenuTile(
+              icon: Ionicons.download_outline,
+              title: 'Copy my data export',
+              colors: colors,
+              onTap: () => _copyExport(context),
+            ),
+            Divider(height: 1, indent: 60, endIndent: 12, color: colors.border),
+            _MenuTile(
+              icon: Ionicons.trash_outline,
+              title: 'Delete account',
+              color: colors.expense,
+              colors: colors,
+              onTap: () => _confirmDeleteAccount(context),
+            ),
+          ],
+        ),
       ),
     );
   }

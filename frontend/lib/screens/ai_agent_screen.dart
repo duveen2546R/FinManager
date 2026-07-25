@@ -10,7 +10,12 @@ import '../theme/app_colors.dart';
 import '../theme/theme_provider.dart';
 import '../widgets/district/gradient_card.dart';
 import '../widgets/district/motion.dart';
+import '../widgets/responsive.dart';
 import 'chat_history_screen.dart';
+
+// The conversation is a reading column: it fills phones edge to edge and stops
+// growing past this on a laptop, where 1900px-wide chat lines are unreadable.
+const double _chatColumnMax = 900;
 
 class _Message {
   final String text;
@@ -263,81 +268,89 @@ class _AiAgentScreenState extends State<AiAgentScreen> {
           const SizedBox(width: 4),
         ],
       ),
-      body: Column(
-        children: [
-          Expanded(
-            child: ListView.builder(
-              controller: _scroll,
-              padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
-              itemCount: _messages.length + 1,
-              itemBuilder: (_, i) => i == 0
-                  ? EntranceFade(child: _assistantHero(colors))
-                  : EntranceFade(
-                      delay: const Duration(milliseconds: 40),
-                      child: _bubble(_messages[i - 1], colors),
-                    ),
-            ),
-          ),
-          if (_loadingHistory)
-            Padding(
-              padding: const EdgeInsets.all(12),
-              child: Text(
-                'Loading conversation…',
-                style: TextStyle(color: colors.secondaryText),
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: _chatColumnMax),
+          child: Column(
+            children: [
+              Expanded(
+                child: ListView.builder(
+                  controller: _scroll,
+                  padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+                  itemCount: _messages.length + 1,
+                  itemBuilder: (_, i) => i == 0
+                      ? EntranceFade(child: _assistantHero(colors))
+                      : EntranceFade(
+                          delay: const Duration(milliseconds: 40),
+                          child: _bubble(_messages[i - 1], colors),
+                        ),
+                ),
               ),
-            ),
-          if (_loading)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: Row(
-                children: [
-                  SizedBox(
-                    width: 16,
-                    height: 16,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: colors.secondaryText,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Thinking…',
+              if (_loadingHistory)
+                Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Text(
+                    'Loading conversation…',
                     style: TextStyle(color: colors.secondaryText),
                   ),
-                ],
-              ),
-            ),
-          if (_messages.length <= 1 && !_loading)
-            SizedBox(
-              height: 58,
-              child: ListView(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                children: [
-                  for (final prompt in _examplePrompts)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 4),
-                      child: ActionChip(
-                        backgroundColor: colors.elevated,
-                        side: BorderSide(color: Colors.transparent),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(24),
+                ),
+              if (_loading)
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  child: Row(
+                    children: [
+                      SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: colors.secondaryText,
                         ),
-                        label: Text(
-                          prompt,
-                          style: TextStyle(
-                            color: colors.text,
-                            fontWeight: FontWeight.w500,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Thinking…',
+                        style: TextStyle(color: colors.secondaryText),
+                      ),
+                    ],
+                  ),
+                ),
+              if (_messages.length <= 1 && !_loading)
+                SizedBox(
+                  height: 58,
+                  child: ListView(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    children: [
+                      for (final prompt in _examplePrompts)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 4),
+                          child: ActionChip(
+                            backgroundColor: colors.elevated,
+                            side: BorderSide(color: Colors.transparent),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(24),
+                            ),
+                            label: Text(
+                              prompt,
+                              style: TextStyle(
+                                color: colors.text,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            onPressed: () => _sendMessage(prompt),
                           ),
                         ),
-                        onPressed: () => _sendMessage(prompt),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-          _inputArea(colors),
-        ],
+                    ],
+                  ),
+                ),
+              _inputArea(colors),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -393,6 +406,13 @@ class _AiAgentScreenState extends State<AiAgentScreen> {
     );
   }
 
+  // A share of the chat column, but never so wide that lines stop being
+  // readable on a laptop.
+  double _bubbleMaxWidth(double fraction) {
+    final available = context.screenWidth.clamp(0, _chatColumnMax);
+    return available * fraction;
+  }
+
   Widget _bubble(_Message item, AppColors colors) {
     final textColor = item.isUser ? colors.onPrimary : colors.text;
     final dashboardBodyStyle = Theme.of(
@@ -400,9 +420,7 @@ class _AiAgentScreenState extends State<AiAgentScreen> {
     ).textTheme.bodyLarge!.copyWith(fontSize: 15.5);
 
     final userBubble = Container(
-      constraints: BoxConstraints(
-        maxWidth: MediaQuery.of(context).size.width * 0.72,
-      ),
+      constraints: BoxConstraints(maxWidth: _bubbleMaxWidth(0.72)),
       padding: const EdgeInsets.symmetric(vertical: 13, horizontal: 16),
       decoration: BoxDecoration(
         color: colors.primary,
@@ -414,9 +432,7 @@ class _AiAgentScreenState extends State<AiAgentScreen> {
       ),
     );
     final assistantBubble = ConstrainedBox(
-      constraints: BoxConstraints(
-        maxWidth: MediaQuery.of(context).size.width * 0.78,
-      ),
+      constraints: BoxConstraints(maxWidth: _bubbleMaxWidth(0.78)),
       child: SurfaceCard(
         color: colors.card,
         padding: const EdgeInsets.all(16),

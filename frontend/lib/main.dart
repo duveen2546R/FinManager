@@ -5,7 +5,6 @@ import 'package:provider/provider.dart';
 import 'services/api.dart';
 import 'services/storage.dart';
 import 'theme/theme_provider.dart';
-import 'widgets/responsive_wrap.dart';
 import 'screens/first_page_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/forgot_password_screen.dart';
@@ -82,9 +81,6 @@ class FinManagerApp extends StatelessWidget {
           ),
         ),
       ),
-      // Constrain to a centered phone-width column on web / tablet / desktop.
-      builder: (context, child) =>
-          ResponsiveWrap(child: child ?? const SizedBox.shrink()),
       home: const _RootDecider(),
       routes: {
         FirstPageScreen.route: (_) => const FirstPageScreen(),

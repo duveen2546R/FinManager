@@ -8,6 +8,7 @@ import '../theme/app_colors.dart';
 import '../theme/theme_provider.dart';
 import '../utils.dart';
 import '../widgets/toast.dart';
+import '../widgets/responsive.dart';
 import 'add_transaction_screen.dart';
 
 class AllTransactionsArgs {
@@ -103,6 +104,7 @@ class _AllTransactionsScreenState extends State<AllTransactionsScreen> {
   }) {
     return showModalBottomSheet<String>(
       context: context,
+      constraints: sheetConstraints(context),
       backgroundColor: colors.card,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
@@ -198,55 +200,82 @@ class _AllTransactionsScreenState extends State<AllTransactionsScreen> {
                 style: TextStyle(color: colors.secondaryText),
               ),
             )
+          // Laptop: the day groups pack into balanced columns across the full
+          // window instead of one very wide single-file list.
+          : context.isWide
+          ? ListView(
+              padding: EdgeInsets.fromLTRB(
+                context.pagePadX,
+                16,
+                context.pagePadX,
+                40,
+              ),
+              children: [
+                MasonryColumns(
+                  columns: context.screenWidth >= 1500 ? 3 : 2,
+                  gap: 20,
+                  // Roughly how tall each group card is, for balancing.
+                  weights: [for (final group in groups) group.value.length + 1],
+                  children: [
+                    for (final group in groups) _groupCard(group, colors),
+                  ],
+                ),
+              ],
+            )
           : ListView(
               padding: const EdgeInsets.all(8),
               children: [
                 for (final group in groups)
                   Padding(
                     padding: const EdgeInsets.only(bottom: 8),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(16, 8, 0, 8),
-                          child: Text(
-                            group.key,
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
-                              color: colors.secondaryText,
-                            ),
-                          ),
-                        ),
-                        Container(
-                          margin: const EdgeInsets.symmetric(horizontal: 8),
-                          decoration: BoxDecoration(
-                            color: colors.card,
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(color: colors.border),
-                          ),
-                          clipBehavior: Clip.antiAlias,
-                          child: Column(
-                            children: [
-                              for (var i = 0; i < group.value.length; i++) ...[
-                                if (i > 0)
-                                  Divider(
-                                    height: 1,
-                                    thickness: 1,
-                                    indent: 72,
-                                    endIndent: 16,
-                                    color: colors.border,
-                                  ),
-                                _row(group.value[i], colors),
-                              ],
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
+                    child: _groupCard(group, colors),
                   ),
               ],
             ),
+    );
+  }
+
+  // One date group: the date label above a rounded card of its transactions.
+  Widget _groupCard(MapEntry<String, List<Txn>> group, AppColors colors) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 0, 8),
+          child: Text(
+            group.key,
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 16,
+              color: colors.secondaryText,
+            ),
+          ),
+        ),
+        Container(
+          margin: const EdgeInsets.symmetric(horizontal: 8),
+          decoration: BoxDecoration(
+            color: colors.card,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: colors.border),
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: Column(
+            children: [
+              for (var i = 0; i < group.value.length; i++) ...[
+                if (i > 0)
+                  Divider(
+                    height: 1,
+                    thickness: 1,
+                    indent: 72,
+                    endIndent: 16,
+                    color: colors.border,
+                  ),
+                _row(group.value[i], colors),
+              ],
+            ],
+          ),
+        ),
+      ],
     );
   }
 
@@ -318,6 +347,7 @@ class _AllTransactionsScreenState extends State<AllTransactionsScreen> {
   Future<void> _showRowActions(Txn txn, AppColors colors) async {
     await showModalBottomSheet(
       context: context,
+      constraints: sheetConstraints(context),
       backgroundColor: colors.card,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
@@ -340,29 +370,43 @@ class _AllTransactionsScreenState extends State<AllTransactionsScreen> {
                 ),
               ),
               const SizedBox(height: 16),
-              Text(txn.title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                      color: colors.text,
-                      fontSize: 18,
-                      fontWeight: FontWeight.w800)),
+              Text(
+                txn.title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: colors.text,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
               const SizedBox(height: 2),
-              Text('${txn.type} · ${txn.category} · ${formatRupee(txn.amount)}',
-                  style:
-                      TextStyle(color: colors.secondaryText, fontSize: 13)),
+              Text(
+                '${txn.type} · ${txn.category} · ${formatRupee(txn.amount)}',
+                style: TextStyle(color: colors.secondaryText, fontSize: 13),
+              ),
               const SizedBox(height: 16),
-              _actionRow(colors, Ionicons.create_outline, 'Edit', colors.text,
-                  () {
-                Navigator.pop(sheetContext);
-                _editTransaction(txn);
-              }),
+              _actionRow(
+                colors,
+                Ionicons.create_outline,
+                'Edit',
+                colors.text,
+                () {
+                  Navigator.pop(sheetContext);
+                  _editTransaction(txn);
+                },
+              ),
               const SizedBox(height: 10),
-              _actionRow(colors, Ionicons.trash_outline, 'Delete',
-                  colors.expense, () {
-                Navigator.pop(sheetContext);
-                _confirmDelete(txn, colors);
-              }),
+              _actionRow(
+                colors,
+                Ionicons.trash_outline,
+                'Delete',
+                colors.expense,
+                () {
+                  Navigator.pop(sheetContext);
+                  _confirmDelete(txn, colors);
+                },
+              ),
             ],
           ),
         ),
@@ -370,8 +414,13 @@ class _AllTransactionsScreenState extends State<AllTransactionsScreen> {
     );
   }
 
-  Widget _actionRow(AppColors colors, IconData icon, String label, Color tint,
-      VoidCallback onTap) {
+  Widget _actionRow(
+    AppColors colors,
+    IconData icon,
+    String label,
+    Color tint,
+    VoidCallback onTap,
+  ) {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(16),
@@ -386,16 +435,21 @@ class _AllTransactionsScreenState extends State<AllTransactionsScreen> {
             Container(
               width: 40,
               height: 40,
-              decoration:
-                  BoxDecoration(color: colors.card, shape: BoxShape.circle),
+              decoration: BoxDecoration(
+                color: colors.card,
+                shape: BoxShape.circle,
+              ),
               child: Icon(icon, size: 20, color: tint),
             ),
             const SizedBox(width: 14),
-            Text(label,
-                style: TextStyle(
-                    color: tint,
-                    fontSize: 15.5,
-                    fontWeight: FontWeight.w700)),
+            Text(
+              label,
+              style: TextStyle(
+                color: tint,
+                fontSize: 15.5,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
           ],
         ),
       ),

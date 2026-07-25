@@ -6,6 +6,7 @@ import '../services/api.dart';
 import '../theme/theme_provider.dart';
 import '../widgets/auth_fields.dart';
 import '../widgets/district/auth_header.dart';
+import '../widgets/district/auth_shell.dart';
 import '../widgets/district/motion.dart';
 import '../widgets/toast.dart';
 import 'login_screen.dart';
@@ -111,8 +112,11 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       backgroundColor: colors.background,
       appBar: AppBar(),
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+        child: AuthShell(
+          colors: colors,
+          headline: 'Back into\nyour account.',
+          subline:
+              'We’ll email you a six-digit code so you can set a new password.',
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [

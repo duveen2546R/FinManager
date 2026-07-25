@@ -7,6 +7,7 @@ import '../services/api.dart';
 import '../theme/theme_provider.dart';
 import '../widgets/auth_fields.dart';
 import '../widgets/district/auth_header.dart';
+import '../widgets/district/auth_shell.dart';
 import '../widgets/district/motion.dart';
 import '../widgets/toast.dart';
 import 'home_screen.dart';
@@ -90,8 +91,17 @@ class _LoginScreenState extends State<LoginScreen> {
       backgroundColor: colors.background,
       appBar: AppBar(),
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+        child: AuthShell(
+          colors: colors,
+          headline: 'Your money,\nbeautifully managed.',
+          subline:
+              'Pick up where you left off — your spending, stats and assistant '
+              'are waiting.',
+          points: const [
+            'Every transaction in one place',
+            'Charts that explain your month',
+            'An AI assistant that speaks your language',
+          ],
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [

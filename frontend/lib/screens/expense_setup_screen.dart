@@ -7,6 +7,7 @@ import '../services/api.dart';
 import '../theme/app_colors.dart';
 import '../theme/theme_provider.dart';
 import '../utils.dart';
+import '../widgets/responsive.dart';
 import '../widgets/toast.dart';
 
 class ExpenseSetupScreen extends StatefulWidget {
@@ -324,41 +325,62 @@ class _ExpenseSetupScreenState extends State<ExpenseSetupScreen>
               ),
             ],
           )
+        : context.isWide
+        // Laptop: the same cards tiled across the full window width.
+        ? ListView(
+            padding: EdgeInsets.fromLTRB(
+              context.pagePadX,
+              16,
+              context.pagePadX,
+              40,
+            ),
+            children: [
+              ResponsiveTileGrid(
+                columns: context.screenWidth >= 1500 ? 3 : 2,
+                children: [
+                  for (var index = 0; index < _commitments.length; index++)
+                    _commitmentCard(_commitments[index], index, colors),
+                ],
+              ),
+            ],
+          )
         : ListView.builder(
             padding: const EdgeInsets.all(16),
             itemCount: _commitments.length,
-            itemBuilder: (_, index) {
-              final item = _commitments[index];
-              return Card(
-                child: ListTile(
-                  onTap: () => _editCommitment(item),
-                  title: Text(item.title),
-                  subtitle: Text(
-                    '${item.frequency} · due ${formatShortDate(item.nextDueDate)}',
-                  ),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        formatRupee(item.expectedAmount),
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      IconButton(
-                        icon: const Icon(Ionicons.trash_outline),
-                        onPressed: () async {
-                          await Api.deleteCommitment(item.id);
-                          if (mounted) {
-                            setState(() => _commitments.removeAt(index));
-                          }
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            },
+            itemBuilder: (_, index) =>
+                _commitmentCard(_commitments[index], index, colors),
           ),
   );
+
+  Widget _commitmentCard(Commitment item, int index, AppColors colors) {
+    return Card(
+      child: ListTile(
+        onTap: () => _editCommitment(item),
+        title: Text(item.title),
+        subtitle: Text(
+          '${item.frequency} · due ${formatShortDate(item.nextDueDate)}',
+        ),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              formatRupee(item.expectedAmount),
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+            IconButton(
+              icon: const Icon(Ionicons.trash_outline),
+              onPressed: () async {
+                await Api.deleteCommitment(item.id);
+                if (mounted) {
+                  setState(() => _commitments.removeAt(index));
+                }
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
   Widget _ruleList(AppColors colors) => RefreshIndicator(
     onRefresh: _load,
@@ -374,27 +396,44 @@ class _ExpenseSetupScreenState extends State<ExpenseSetupScreen>
               ),
             ],
           )
+        : context.isWide
+        ? ListView(
+            padding: EdgeInsets.fromLTRB(
+              context.pagePadX,
+              16,
+              context.pagePadX,
+              40,
+            ),
+            children: [
+              ResponsiveTileGrid(
+                columns: context.screenWidth >= 1500 ? 3 : 2,
+                children: [
+                  for (var index = 0; index < _rules.length; index++)
+                    _ruleCard(_rules[index], index),
+                ],
+              ),
+            ],
+          )
         : ListView.builder(
             padding: const EdgeInsets.all(16),
             itemCount: _rules.length,
-            itemBuilder: (_, index) {
-              final item = _rules[index];
-              return Card(
-                child: ListTile(
-                  title: Text(item.displayMerchant ?? item.pattern),
-                  subtitle: Text(
-                    '${item.pattern} · ${item.category ?? 'No category'}',
-                  ),
-                  trailing: IconButton(
-                    icon: const Icon(Ionicons.trash_outline),
-                    onPressed: () async {
-                      await Api.deleteMerchantRule(item.id);
-                      if (mounted) setState(() => _rules.removeAt(index));
-                    },
-                  ),
-                ),
-              );
-            },
+            itemBuilder: (_, index) => _ruleCard(_rules[index], index),
           ),
   );
+
+  Widget _ruleCard(MerchantRule item, int index) {
+    return Card(
+      child: ListTile(
+        title: Text(item.displayMerchant ?? item.pattern),
+        subtitle: Text('${item.pattern} · ${item.category ?? 'No category'}'),
+        trailing: IconButton(
+          icon: const Icon(Ionicons.trash_outline),
+          onPressed: () async {
+            await Api.deleteMerchantRule(item.id);
+            if (mounted) setState(() => _rules.removeAt(index));
+          },
+        ),
+      ),
+    );
+  }
 }
