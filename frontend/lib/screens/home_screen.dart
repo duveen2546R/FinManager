@@ -15,6 +15,7 @@ import '../widgets/responsive.dart';
 import '../widgets/district/gradient_card.dart';
 import '../widgets/district/motion.dart';
 import '../widgets/district/shimmer.dart';
+import '../widgets/district/top_nav.dart';
 import '../widgets/monthly_bar_chart.dart';
 import '../widgets/spending_pie_chart.dart';
 import 'account_screen.dart';
@@ -363,15 +364,30 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     final colors = context.watch<ThemeProvider>().colors;
 
+    final wide = context.isWide;
+
     return Scaffold(
       backgroundColor: colors.background,
       extendBody: true,
-      bottomNavigationBar: DistrictBottomNav(
-        currentIndex: 0,
-        onTap: _onNavTap,
-        onAdd: () => _openQuickActions(colors),
-        colors: colors,
-      ),
+      // Laptop navigation lives in a full-width header; phones keep the
+      // floating bottom bar.
+      appBar: wide
+          ? DistrictTopNav(
+              currentIndex: 0,
+              onTap: _onNavTap,
+              onAdd: () => _openQuickActions(colors),
+              colors: colors,
+              initial: _userName.isNotEmpty ? _userName[0].toUpperCase() : 'U',
+            )
+          : null,
+      bottomNavigationBar: wide
+          ? null
+          : DistrictBottomNav(
+              currentIndex: 0,
+              onTap: _onNavTap,
+              onAdd: () => _openQuickActions(colors),
+              colors: colors,
+            ),
       body: SafeArea(
         bottom: false,
         child: _loading
@@ -439,7 +455,7 @@ class _HomeScreenState extends State<HomeScreen> {
         physics: const BouncingScrollPhysics(
           parent: AlwaysScrollableScrollPhysics(),
         ),
-        padding: EdgeInsets.fromLTRB(padX, 16, padX, 120),
+        padding: EdgeInsets.fromLTRB(padX, 24, padX, 48),
         children: [
           EntranceFade(child: _header(colors)),
           const SizedBox(height: 26),
@@ -629,31 +645,36 @@ class _HomeScreenState extends State<HomeScreen> {
             ],
           ),
         ),
-        PressableScale(
-          onTap: () => Navigator.pushNamed(
-            context,
-            AccountScreen.route,
-            arguments: AccountArgs(userName: _userName, userEmail: _userEmail),
-          ),
-          child: Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              color: colors.card,
-              shape: BoxShape.circle,
-              border: Border.all(color: colors.accent, width: 2.5),
+        // On wide screens the top nav already carries the avatar.
+        if (!context.isWide)
+          PressableScale(
+            onTap: () => Navigator.pushNamed(
+              context,
+              AccountScreen.route,
+              arguments: AccountArgs(
+                userName: _userName,
+                userEmail: _userEmail,
+              ),
             ),
-            alignment: Alignment.center,
-            child: Text(
-              initial,
-              style: TextStyle(
-                color: colors.text,
-                fontSize: 18,
-                fontWeight: FontWeight.w800,
+            child: Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                color: colors.card,
+                shape: BoxShape.circle,
+                border: Border.all(color: colors.accent, width: 2.5),
+              ),
+              alignment: Alignment.center,
+              child: Text(
+                initial,
+                style: TextStyle(
+                  color: colors.text,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                ),
               ),
             ),
           ),
-        ),
       ],
     );
   }

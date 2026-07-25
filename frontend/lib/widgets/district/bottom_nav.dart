@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:ionicons/ionicons.dart';
 import '../../theme/app_colors.dart';
-import '../responsive.dart';
 import 'motion.dart';
 
 class NavItem {
@@ -37,43 +36,25 @@ class DistrictBottomNav extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bar = Container(
-        height: 68,
-        margin: const EdgeInsets.fromLTRB(16, 0, 16, 10),
-        decoration: BoxDecoration(
-          color: colors.card,
-          borderRadius: BorderRadius.circular(28),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.06),
-              blurRadius: 20,
-              offset: const Offset(0, 8),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            _tab(0),
-            _tab(1),
-            _centerButton(),
-            _tab(2),
-            _tab(3),
-          ],
-        ),
-      );
-
-    return SafeArea(
-      top: false,
-      // Stretched across a laptop window the tabs would drift metres apart, so
-      // the bar stays a centred floating pill over the full-width page.
-      child: context.isWide
-          ? Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 620),
-                child: bar,
-              ),
-            )
-          : bar,
+      height: 68,
+      margin: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+      decoration: BoxDecoration(
+        color: colors.card,
+        borderRadius: BorderRadius.circular(28),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.06),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [_tab(0), _tab(1), _centerButton(), _tab(2), _tab(3)],
+      ),
     );
+
+    return SafeArea(top: false, child: bar);
   }
 
   Widget _tab(int index) {
@@ -88,8 +69,11 @@ class DistrictBottomNav extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(active ? item.activeIcon : item.icon,
-                  size: 22, color: color),
+              Icon(
+                active ? item.activeIcon : item.icon,
+                size: 22,
+                color: color,
+              ),
               const SizedBox(height: 4),
               Text(
                 item.label,
