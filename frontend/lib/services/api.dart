@@ -223,9 +223,8 @@ class Api {
 
   // Revokes the access token server-side; local state is cleared regardless.
   static Future<void> logout() async {
-    try {
-      await _send('POST', AppConfig.logout, body: {});
-    } catch (_) {}
+    // Fire and forget the server-side revocation so the user isn't kept waiting.
+    _send('POST', AppConfig.logout, body: {}).catchError((_) => http.Response('', 500));
     await Storage.clearUser();
   }
 
